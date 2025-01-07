@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom, #ffcc70, #ff6f61);
+            background: linear-gradient(to bottom, #a8e6cf, #dcedc1);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -18,15 +18,14 @@
 
         .menu {
             text-align: center;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            animation: fadeIn 1.5s;
         }
 
         h1 {
-            color: #333;
+            color: #388e3c;
             font-size: 2.5em;
             margin-bottom: 10px;
         }
@@ -40,60 +39,32 @@
         input {
             padding: 10px;
             font-size: 1.2em;
-            border: 2px solid #ff6f61;
+            border: 2px solid #388e3c;
             border-radius: 10px;
-            margin-bottom: 20px;
-            display: block;
             width: 80%;
-            margin: 10px auto;
+            margin-bottom: 20px;
         }
 
         button {
             padding: 15px 30px;
             font-size: 1.2em;
-            background: #ff6f61;
+            background: #388e3c;
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: background 0.3s, transform 0.2s;
-            margin-bottom: 10px;
+            transition: background 0.3s;
         }
 
         button:hover {
-            background: #ff3d3d;
-            transform: scale(1.05);
-        }
-
-        .highscores {
-            text-align: left;
-            margin-top: 20px;
-        }
-
-        .highscores h2 {
-            font-size: 1.5em;
-            color: #333;
-        }
-
-        .highscores ol {
-            list-style: none;
-            padding: 0;
-        }
-
-        .highscores li {
-            background: #ffcc70;
-            margin: 5px 0;
-            padding: 5px 10px;
-            border-radius: 10px;
-            color: #333;
-            font-weight: bold;
+            background: #2e7d32;
         }
 
         canvas {
             display: none;
-            border: 5px solid #333;
-            background: #f0f0f0;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            background: #fff;
+            border: 5px solid #388e3c;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
         .bravo {
@@ -103,11 +74,10 @@
             left: 50%;
             transform: translateX(-50%);
             background: rgba(255, 255, 255, 0.9);
-            color: #ff6f61;
+            color: #388e3c;
             font-size: 2em;
             padding: 10px 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
             animation: fadeInOut 1.5s ease-in-out;
         }
 
@@ -119,53 +89,34 @@
                 opacity: 1;
             }
         }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 <body>
-    <!-- Hauptmenü -->
     <div class="menu" id="menu">
         <h1>Zmija</h1>
         <p>Unesite svoje ime za početak:</p>
         <input type="text" id="playerName" placeholder="Vaše ime">
         <button onclick="startGame()">Započni igru</button>
-        <div class="highscores">
-            <h2>Highscores:</h2>
-            <ol id="highscoreList"></ol>
-        </div>
     </div>
-
-    <!-- Spielfeld -->
     <canvas id="gameCanvas" width="400" height="400"></canvas>
-
-    <!-- Bravo-Nachricht -->
     <div class="bravo" id="bravo">Bravo!</div>
 
     <script>
-        const highscores = JSON.parse(localStorage.getItem('highscores')) || [];
-        const menu = document.getElementById('menu');
-        const playerNameInput = document.getElementById('playerName');
-        const highscoreList = document.getElementById('highscoreList');
-        const gameCanvas = document.getElementById('gameCanvas');
-        const ctx = gameCanvas.getContext('2d');
-        const bravo = document.getElementById('bravo');
+        const menu = document.getElementById("menu");
+        const playerNameInput = document.getElementById("playerName");
+        const gameCanvas = document.getElementById("gameCanvas");
+        const ctx = gameCanvas.getContext("2d");
+        const bravo = document.getElementById("bravo");
 
         let snake = [{ x: 200, y: 200 }];
-        let food = { x: 0, y: 0 };
+        let food = { x: 200, y: 160 };
         let direction = { x: 0, y: 0 };
         let score = 0;
         let nameAttempts = 0;
 
         function startGame() {
             const playerName = playerNameInput.value.trim();
+
             if (!playerName) {
                 if (nameAttempts === 0) {
                     alert("A ime dodati?");
@@ -179,21 +130,13 @@
             }
 
             nameAttempts = 0;
-            menu.style.display = 'none';
-            gameCanvas.style.display = 'block';
-
-            snake = [{ x: 200, y: 200 }];
-            direction = { x: 0, y: -20 };
+            menu.style.display = "none";
+            gameCanvas.style.display = "block";
             score = 0;
-
-            placeFood();
+            snake = [{ x: 200, y: 200 }];
+            direction = { x: 0, y: 0 };
+            food = { x: 200, y: 160 };
             updateGame();
-        }
-
-        function updateHighscores() {
-            highscoreList.innerHTML = highscores
-                .map((score, index) => `<li>${index + 1}. ${score.name}: ${score.points}</li>`)
-                .join('');
         }
 
         function placeFood() {
@@ -201,18 +144,29 @@
             food.y = Math.floor(Math.random() * 20) * 20;
         }
 
+        function showBravo() {
+            bravo.style.display = "block";
+            setTimeout(() => {
+                bravo.style.display = "none";
+            }, 1000);
+        }
+
         function drawGame() {
             ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
-            snake.forEach(segment => {
-                ctx.fillStyle = 'green';
+            snake.forEach((segment, index) => {
+                ctx.fillStyle = index === 0 ? "darkgreen" : "lightgreen";
                 ctx.fillRect(segment.x, segment.y, 20, 20);
             });
 
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = "red";
             ctx.beginPath();
             ctx.arc(food.x + 10, food.y + 10, 10, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText(`Bodovi: ${score}`, 10, 20);
         }
 
         function moveSnake() {
@@ -222,7 +176,9 @@
             if (head.x === food.x && head.y === food.y) {
                 score++;
                 placeFood();
-                if (score % 10 === 0) showBravo();
+                if (score % 10 === 0) {
+                    showBravo();
+                }
             } else {
                 snake.pop();
             }
@@ -236,22 +192,10 @@
             }
         }
 
-        function showBravo() {
-            bravo.style.display = 'block';
-            setTimeout(() => bravo.style.display = 'none', 1000);
-        }
-
         function endGame() {
-            const playerName = playerNameInput.value.trim();
-            highscores.push({ name: playerName, points: score });
-            highscores.sort((a, b) => b.points - a.points);
-            highscores.splice(10);
-            localStorage.setItem('highscores', JSON.stringify(highscores));
-
             alert(`Kraj igre! Bodovi: ${score}`);
-            menu.style.display = 'block';
-            gameCanvas.style.display = 'none';
-            updateHighscores();
+            menu.style.display = "block";
+            gameCanvas.style.display = "none";
         }
 
         function updateGame() {
@@ -260,14 +204,12 @@
             setTimeout(updateGame, 100);
         }
 
-        document.addEventListener('keydown', event => {
-            if (event.key === 'ArrowUp' && direction.y === 0) direction = { x: 0, y: -20 };
-            if (event.key === 'ArrowDown' && direction.y === 0) direction = { x: 0, y: 20 };
-            if (event.key === 'ArrowLeft' && direction.x === 0) direction = { x: -20, y: 0 };
-            if (event.key === 'ArrowRight' && direction.x === 0) direction = { x: 20, y: 0 };
+        document.addEventListener("keydown", event => {
+            if (event.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -20 };
+            if (event.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 20 };
+            if (event.key === "ArrowLeft" && direction.x === 0) direction = { x: -20, y: 0 };
+            if (event.key === "ArrowRight" && direction.x === 0) direction = { x: 20, y: 0 };
         });
-
-        updateHighscores();
     </script>
 </body>
 </html>
