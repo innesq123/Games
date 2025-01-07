@@ -70,8 +70,9 @@
         const menu = document.getElementById("menu");
         const highscoreList = document.getElementById("highscoreList");
 
-        let player = { name: "", color: "green", x: 200, y: 500, width: 30, height: 30, dy: 0, score: 0 };
+        let player = { name: "", color: "green", x: 200, y: 500, width: 30, height: 30, dy: 0, dx: 0, score: 0 };
         let platforms = [];
+        let keys = {};
         let gameRunning = false;
         let highscores = JSON.parse(localStorage.getItem("highscores")) || [];
 
@@ -108,9 +109,15 @@
                     height: 10,
                 });
             }
-            player.x = 200;
-            player.y = 500;
+
+            // Solide Plattform für den Start
+            platforms[platforms.length - 1].x = 170;
+            platforms[platforms.length - 1].y = canvas.height - 50;
+
+            player.x = platforms[platforms.length - 1].x + 15; // Start mittig auf Plattform
+            player.y = platforms[platforms.length - 1].y - player.height;
             player.dy = 0;
+            player.dx = 0;
             player.score = 0;
         }
 
@@ -127,8 +134,18 @@
         }
 
         function updatePlayer() {
-            player.dy += 0.5;
+            player.dy += 0.5; // Gravity
             player.y += player.dy;
+
+            // Horizontal Movement
+            if (keys["ArrowLeft"] && player.x > 0) {
+                player.dx = -3;
+            } else if (keys["ArrowRight"] && player.x < canvas.width - player.width) {
+                player.dx = 3;
+            } else {
+                player.dx = 0;
+            }
+            player.x += player.dx;
 
             if (player.y > canvas.height) {
                 endGame();
@@ -182,6 +199,15 @@
 
             requestAnimationFrame(updateGame);
         }
+
+        // Steuerung
+        window.addEventListener("keydown", (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            keys[e.key] = false;
+        });
 
         updateHighscoreList();
     </script>
