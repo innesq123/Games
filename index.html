@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adisova Igra - Hakala</title>
+    <style>
+        /* Allgemeines Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB, #4682B4); /* Himmel-Hintergrund */
+            overflow: hidden;
+        }
+
+        /* Startmenü */
+        .start-screen {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 2s ease-in-out;
+        }
+
+        h1 {
+            font-size: 3em;
+            color: #005f73;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        p {
+            font-size: 1.2em;
+            color: #005f73;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            background: #0a9396;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        button:hover {
+            transform: scale(1.1);
+            background: #005f73;
+        }
+
+        canvas {
+            display: none;
+            background: linear-gradient(to bottom, #87CEEB, #1E90FF); /* Himmel-Hintergrund */
+            border: 3px solid white;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Startseite -->
+    <div class="start-screen" id="startScreen">
+        <h1>Adisova Igra - Hakala</h1>
+        <p>Pomozite Hakalu da izbjegne prepreke!</p>
+        <button onclick="startGame()">Započni igru</button>
+    </div>
+
+    <!-- Spielbereich -->
+    <canvas id="gameCanvas" width="320" height="480"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const startScreen = document.getElementById("startScreen");
+
+        // Pixel-Vogel
+        let bird = { x: 50, y: 150, size: 20, gravity: 0, lift: -6, color: "green", wingUp: true };
+
+        // Hindernisse
+        let pipes = [];
+        let gameSpeed = 2;
+        let score = 0;
+
+        // Zeichne den Pixel-Vogel
+        function drawBird() {
+            ctx.fillStyle = bird.color;
+            if (bird.wingUp) {
+                // Flügel nach oben
+                ctx.fillRect(bird.x, bird.y, bird.size, bird.size);
+                ctx.fillRect(bird.x - 5, bird.y - 5, 10, 5);
+            } else {
+                // Flügel nach unten
+                ctx.fillRect(bird.x, bird.y, bird.size, bird.size);
+                ctx.fillRect(bird.x - 5, bird.y + bird.size, 10, 5);
+            }
+        }
+
+        // Erstelle Hindernisse
+        function createPipe() {
+            const gap = 120;
+            const topHeight = Math.random() * (canvas.height / 2);
+            pipes.push({
+                x: canvas.width,
+                top: topHeight,
+                bottom: topHeight + gap,
+                width: 40,
+            });
+        }
+
+        // Zeichne Hindernisse
+        function drawPipes() {
+            pipes.forEach((pipe) => {
+                ctx.fillStyle = "green";
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+                ctx.fillRect(pipe.x, pipe.bottom, pipe.width, canvas.height - pipe.bottom);
+            });
+        }
+
+        // Aktualisiere Hindernisse
+        function updatePipes() {
+            pipes.forEach((pipe, index) => {
+                pipe.x -= gameSpeed;
+
+                if (pipe.x + pipe.width < 0) {
+                    pipes.splice(index, 1);
+                    score++;
+                }
+            });
+
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width / 2) {
+                createPipe();
+            }
+        }
+
+        // Kollisionsprüfung
+        function checkCollision() {
+            if (bird.y + bird.size >= canvas.height || bird.y <= 0) {
+                return true;
+            }
+
+            for (let pipe of pipes) {
+                if (
+                    bird.x < pipe.x + pipe.width &&
+                    bird.x + bird.size > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.size > pipe.bottom)
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Spiel starten
+        function playGame() {
+            bird.gravity += 0.2;
+            bird.y += bird.gravity;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            bird.wingUp = !bird.wingUp;
+            drawBird();
+            drawPipes();
+
+            updatePipes();
+
+            ctx.fillStyle = "black";
+            ctx.font = "20px Arial";
+            ctx.fillText("Bodovi: " + score, 10, 30);
+
+            if (checkCollision()) {
+                alert("Igra je završena! Bodovi: " + score);
+                resetGame();
+            } else {
+                requestAnimationFrame(playGame);
+            }
+        }
+
+        // Startseite aufrufen
+        function startGame() {
+            startScreen.style.display = "none";
+            canvas.style.display = "block";
+            createPipe();
+            playGame();
+        }
+
+        // Zurücksetzen
+        function resetGame() {
+            bird.y = 150;
+            bird.gravity = 0;
+            pipes = [];
+            score = 0;
+            createPipe();
+            playGame();
+        }
+
+        // Sprungsteuerung
+        document.addEventListener("keydown", () => {
+            bird.gravity = bird.lift;
+        });
+        canvas.addEventListener("click", () => {
+            bird.gravity = bird.lift;
+        });
+    </script>
+</body>
+</html>
