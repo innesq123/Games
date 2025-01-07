@@ -1,154 +1,149 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D GTA-like Game</title>
+    <title>Mama Reda Šerpe</title>
     <style>
         body {
             margin: 0;
-            overflow: hidden;
             font-family: Arial, sans-serif;
+            background: linear-gradient(120deg, #ff9a9e, #fad0c4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
-        canvas {
-            display: block;
-            background: #87CEEB; /* Sky */
+        h1 {
+            margin: 10px;
+            color: #ffffff;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
         }
-        .info {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 10px;
+        .game-board {
+            width: 300px;
+            height: 300px;
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(10, 30px);
+            background: #ffffff;
+            border: 5px solid #ff6f61;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #eee;
+            box-sizing: border-box;
+        }
+        .block {
+            width: 30px;
+            height: 30px;
+            background: #ff6f61;
             border-radius: 5px;
-            font-size: 16px;
-            z-index: 1000;
+            position: absolute;
+            cursor: grab;
+        }
+        .block:active {
+            cursor: grabbing;
+        }
+        .controls {
+            display: flex;
+            margin-top: 20px;
+        }
+        .score {
+            margin-top: 10px;
+            color: #ffffff;
+            font-size: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="info">Use Arrow Keys to Move | Space to Enter Car</div>
-    <canvas id="gameCanvas"></canvas>
+    <h1>Mama Reda Šerpe</h1>
+    <div class="game-board" id="gameBoard"></div>
+    <div class="controls" id="controls"></div>
+    <div class="score" id="score">Bodovi: 0</div>
+
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const gameBoard = document.getElementById("gameBoard");
+        const controls = document.getElementById("controls");
+        const scoreDisplay = document.getElementById("score");
+        const boardSize = 10;
+        const cellSize = 30;
+        let score = 0;
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Initialisiere das Spielfeld
+        const board = [];
+        for (let i = 0; i < boardSize; i++) {
+            const row = [];
+            for (let j = 0; j < boardSize; j++) {
+                const cell = document.createElement("div");
+                cell.classList.add("cell");
+                gameBoard.appendChild(cell);
+                row.push(0);
+            }
+            board.push(row);
+        }
 
-        const keys = {};
-        window.addEventListener("keydown", (e) => keys[e.key] = true);
-        window.addEventListener("keyup", (e) => keys[e.key] = false);
+        // Generiere Blöcke
+        function generateBlocks() {
+            controls.innerHTML = ""; // Leere vorherige Blöcke
+            for (let i = 0; i < 3; i++) {
+                const block = document.createElement("div");
+                block.classList.add("block");
+                block.style.left = `${i * 50}px`;
+                block.dataset.value = Math.floor(Math.random() * 3) + 1; // Zufälliger Wert
+                block.style.background = getColor(block.dataset.value);
+                block.draggable = true;
 
-        const player = {
-            x: 300,
-            y: 300,
-            width: 20,
-            height: 20,
-            speed: 2,
-            color: "red",
-            inCar: false
-        };
+                // Drag-and-Drop-Ereignisse
+                block.addEventListener("dragstart", (e) => {
+                    e.dataTransfer.setData("text/plain", block.dataset.value);
+                });
 
-        const car = {
-            x: 500,
-            y: 500,
-            width: 50,
-            height: 30,
-            speed: 3,
-            color: "blue"
-        };
+                controls.appendChild(block);
+            }
+        }
 
-        const buildings = [
-            { x: 200, y: 200, width: 100, height: 100, color: "gray" },
-            { x: 800, y: 300, width: 150, height: 100, color: "darkgray" }
-        ];
+        // Füge Farben hinzu
+        function getColor(value) {
+            switch (value) {
+                case "1":
+                    return "#ff6f61";
+                case "2":
+                    return "#6fcf97";
+                case "3":
+                    return "#56ccf2";
+                default:
+                    return "#ddd";
+            }
+        }
 
-        const map = {
-            width: 2000,
-            height: 2000,
-            color: "#228B22"
-        };
-
-        const camera = {
-            x: 0,
-            y: 0
-        };
-
-        function movePlayer() {
-            if (player.inCar) {
-                if (keys.ArrowUp) car.y -= car.speed;
-                if (keys.ArrowDown) car.y += car.speed;
-                if (keys.ArrowLeft) car.x -= car.speed;
-                if (keys.ArrowRight) car.x += car.speed;
-            } else {
-                if (keys.ArrowUp) player.y -= player.speed;
-                if (keys.ArrowDown) player.y += player.speed;
-                if (keys.ArrowLeft) player.x -= player.speed;
-                if (keys.ArrowRight) player.x += player.speed;
-
-                // Check collision with car to enter it
-                if (
-                    keys[" "] &&
-                    player.x + player.width > car.x &&
-                    player.x < car.x + car.width &&
-                    player.y + player.height > car.y &&
-                    player.y < car.y + car.height
-                ) {
-                    player.inCar = true;
+        // Überprüfe das Raster
+        function checkBoard() {
+            for (let i = 0; i < boardSize; i++) {
+                if (board[i].every((cell) => cell > 0)) {
+                    score += 10;
+                    board[i].fill(0); // Leere die Reihe
+                    updateBoard();
                 }
             }
         }
 
-        function updateCamera() {
-            if (player.inCar) {
-                camera.x = Math.max(0, Math.min(map.width - canvas.width, car.x + car.width / 2 - canvas.width / 2));
-                camera.y = Math.max(0, Math.min(map.height - canvas.height, car.y + car.height / 2 - canvas.height / 2));
-            } else {
-                camera.x = Math.max(0, Math.min(map.width - canvas.width, player.x + player.width / 2 - canvas.width / 2));
-                camera.y = Math.max(0, Math.min(map.height - canvas.height, player.y + player.height / 2 - canvas.height / 2));
-            }
-        }
-
-        function drawMap() {
-            ctx.fillStyle = map.color;
-            ctx.fillRect(-camera.x, -camera.y, map.width, map.height);
-        }
-
-        function drawBuildings() {
-            buildings.forEach((building) => {
-                ctx.fillStyle = building.color;
-                ctx.fillRect(building.x - camera.x, building.y - camera.y, building.width, building.height);
+        // Aktualisiere das Spielfeld
+        function updateBoard() {
+            const cells = document.querySelectorAll(".cell");
+            cells.forEach((cell, index) => {
+                const x = Math.floor(index / boardSize);
+                const y = index % boardSize;
+                cell.style.background = board[x][y] > 0 ? getColor(board[x][y].toString()) : "#ffffff";
             });
+            scoreDisplay.textContent = `Bodovi: ${score}`;
         }
 
-        function drawPlayer() {
-            if (!player.inCar) {
-                ctx.fillStyle = player.color;
-                ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
-            }
-        }
-
-        function drawCar() {
-            ctx.fillStyle = car.color;
-            ctx.fillRect(car.x - camera.x, car.y - camera.y, car.width, car.height);
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            movePlayer();
-            updateCamera();
-
-            drawMap();
-            drawBuildings();
-            drawCar();
-            drawPlayer();
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        gameLoop();
+        // Starte das Spiel
+        generateBlocks();
+        updateBoard();
     </script>
 </body>
 </html>
