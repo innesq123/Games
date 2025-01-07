@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mini Open-World Game</title>
+    <title>2D GTA-like Game</title>
     <style>
         body {
             margin: 0;
@@ -12,11 +12,22 @@
         }
         canvas {
             display: block;
-            background: #87CEEB; /* Himmel */
+            background: #87CEEB; /* Sky */
+        }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
+    <div class="info">Use Arrow Keys to Move | Space to Enter Car</div>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
@@ -25,55 +36,78 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        const keys = {};
+        window.addEventListener("keydown", (e) => keys[e.key] = true);
+        window.addEventListener("keyup", (e) => keys[e.key] = false);
+
         const player = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            width: 40,
-            height: 40,
+            x: 300,
+            y: 300,
+            width: 20,
+            height: 20,
+            speed: 2,
             color: "red",
-            speed: 5,
+            inCar: false
         };
+
+        const car = {
+            x: 500,
+            y: 500,
+            width: 50,
+            height: 30,
+            speed: 3,
+            color: "blue"
+        };
+
+        const buildings = [
+            { x: 200, y: 200, width: 100, height: 100, color: "gray" },
+            { x: 800, y: 300, width: 150, height: 100, color: "darkgray" }
+        ];
 
         const map = {
             width: 2000,
             height: 2000,
-            color: "#228B22", // Gras
+            color: "#228B22"
         };
 
         const camera = {
             x: 0,
-            y: 0,
+            y: 0
         };
-
-        const keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false,
-        };
-
-        window.addEventListener("keydown", (e) => {
-            if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
-        });
-
-        window.addEventListener("keyup", (e) => {
-            if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
-        });
 
         function movePlayer() {
-            if (keys.ArrowUp) player.y -= player.speed;
-            if (keys.ArrowDown) player.y += player.speed;
-            if (keys.ArrowLeft) player.x -= player.speed;
-            if (keys.ArrowRight) player.x += player.speed;
+            if (player.inCar) {
+                if (keys.ArrowUp) car.y -= car.speed;
+                if (keys.ArrowDown) car.y += car.speed;
+                if (keys.ArrowLeft) car.x -= car.speed;
+                if (keys.ArrowRight) car.x += car.speed;
+            } else {
+                if (keys.ArrowUp) player.y -= player.speed;
+                if (keys.ArrowDown) player.y += player.speed;
+                if (keys.ArrowLeft) player.x -= player.speed;
+                if (keys.ArrowRight) player.x += player.speed;
 
-            // Grenzen des Spielfelds
-            player.x = Math.max(0, Math.min(map.width - player.width, player.x));
-            player.y = Math.max(0, Math.min(map.height - player.height, player.y));
+                // Check collision with car to enter it
+                if (
+                    keys[" "] &&
+                    player.x + player.width > car.x &&
+                    player.x < car.x + car.width &&
+                    player.y + player.height > car.y &&
+                    player.y < car.y + car.height
+                ) {
+                    player.inCar = true;
+                }
+            }
         }
 
         function updateCamera() {
-            camera.x = Math.max(0, Math.min(map.width - canvas.width, player.x + player.width / 2 - canvas.width / 2));
-            camera.y = Math.max(0, Math.min(map.height - canvas.height, player.y + player.height / 2 - canvas.height / 2));
+            if (player.inCar) {
+                camera.x = Math.max(0, Math.min(map.width - canvas.width, car.x + car.width / 2 - canvas.width / 2));
+                camera.y = Math.max(0, Math.min(map.height - canvas.height, car.y + car.height / 2 - canvas.height / 2));
+            } else {
+                camera.x = Math.max(0, Math.min(map.width - canvas.width, player.x + player.width / 2 - canvas.width / 2));
+                camera.y = Math.max(0, Math.min(map.height - canvas.height, player.y + player.height / 2 - canvas.height / 2));
+            }
         }
 
         function drawMap() {
@@ -81,9 +115,23 @@
             ctx.fillRect(-camera.x, -camera.y, map.width, map.height);
         }
 
+        function drawBuildings() {
+            buildings.forEach((building) => {
+                ctx.fillStyle = building.color;
+                ctx.fillRect(building.x - camera.x, building.y - camera.y, building.width, building.height);
+            });
+        }
+
         function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
+            if (!player.inCar) {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
+            }
+        }
+
+        function drawCar() {
+            ctx.fillStyle = car.color;
+            ctx.fillRect(car.x - camera.x, car.y - camera.y, car.width, car.height);
         }
 
         function gameLoop() {
@@ -93,6 +141,8 @@
             updateCamera();
 
             drawMap();
+            drawBuildings();
+            drawCar();
             drawPlayer();
 
             requestAnimationFrame(gameLoop);
