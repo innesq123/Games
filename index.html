@@ -3,87 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Innesova Igra</title>
+    <title>Zmija - Moderan Snake</title>
     <style>
+        /* Allgemeines Styling */
         body {
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom, #87CEEB, #f0f8ff);
+            font-family: 'Arial', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            background: linear-gradient(to bottom, #5dc1b9, #f4f9f4);
             overflow: hidden;
         }
 
+        /* Menü-Styling */
         .menu {
             text-align: center;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+            animation: fadeIn 1.5s ease-in-out;
         }
 
         h1 {
+            font-size: 3em;
+            color: #003b3f;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        p {
+            font-size: 1.2em;
             color: #005f73;
+            margin-bottom: 20px;
         }
 
         .menu input, .menu select, .menu button {
             margin: 10px;
-            padding: 10px;
-            font-size: 16px;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 2px solid #005f73;
+            border-radius: 10px;
+            background: #d1e8e2;
+            cursor: pointer;
+            transition: all 0.3s ease-in-out;
+            width: 80%;
+            max-width: 300px;
         }
 
+        .menu button:hover {
+            background: #005f73;
+            color: white;
+        }
+
+        /* Canvas */
         canvas {
             display: none;
-            border: 3px solid #333;
-            background: #f0f8ff;
+            border: 3px solid #003b3f;
+            background: #faf4d3;
         }
 
-        .highscores {
-            margin-top: 20px;
+        /* Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Steuerung */
+        .controls {
+            display: none;
+            position: absolute;
+            bottom: 10%;
+            width: 100%;
             text-align: center;
+        }
+
+        .controls button {
+            margin: 5px;
+            padding: 20px;
+            font-size: 1.5em;
+            background: #005f73;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .controls button:hover {
+            transform: scale(1.2);
         }
     </style>
 </head>
 <body>
+    <!-- Startmenü -->
     <div class="menu" id="menu">
-        <h1>Innesova Igra</h1>
-        <input type="text" id="playerName" placeholder="Unesite ime lika" maxlength="10">
+        <h1>Zmija</h1>
+        <p>Odaberite svog zmijskog lika i započnite igru!</p>
+        <input type="text" id="playerName" placeholder="Ime igrača" maxlength="10">
         <select id="characterColor">
             <option value="green">Zeleni</option>
             <option value="red">Crveni</option>
             <option value="blue">Plavi</option>
         </select>
         <button onclick="startGame()">Započni igru</button>
-        <div class="highscores">
-            <h2>Najbolji rezultati</h2>
-            <ol id="highscoreList"></ol>
-        </div>
     </div>
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+
+    <!-- Spielbereich -->
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <!-- Steuerung für Mobilgeräte -->
+    <div class="controls" id="controls">
+        <button onclick="moveSnake('up')">⬆</button>
+        <div>
+            <button onclick="moveSnake('left')">⬅</button>
+            <button onclick="moveSnake('right')">➡</button>
+        </div>
+        <button onclick="moveSnake('down')">⬇</button>
+    </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const menu = document.getElementById("menu");
-        const highscoreList = document.getElementById("highscoreList");
+        const controls = document.getElementById("controls");
 
-        let player = { name: "", color: "green", x: 200, y: 500, width: 30, height: 30, dy: 0, dx: 0, score: 0 };
-        let platforms = [];
-        let keys = {};
-        let gameRunning = false;
-        let highscores = JSON.parse(localStorage.getItem("highscores")) || [];
-
-        function updateHighscoreList() {
-            highscoreList.innerHTML = "";
-            highscores.slice(0, 10).forEach((score) => {
-                const li = document.createElement("li");
-                li.textContent = `${score.name}: ${score.score}`;
-                highscoreList.appendChild(li);
-            });
-        }
+        let player = { name: "", color: "green", score: 0 };
+        let snake = [{ x: 200, y: 200 }];
+        let direction = { x: 0, y: 0 };
+        let food = { x: 0, y: 0 };
+        let gridSize = 20;
+        let gameInterval;
 
         function startGame() {
             const playerName = document.getElementById("playerName").value || "Igrac";
@@ -91,125 +153,89 @@
 
             player.name = playerName;
             player.color = characterColor;
+            player.score = 0;
 
             menu.style.display = "none";
             canvas.style.display = "block";
-            initializeGame();
-            gameRunning = true;
-            requestAnimationFrame(updateGame);
+            controls.style.display = "block";
+
+            resetGame();
+            spawnFood();
+            gameInterval = setInterval(updateGame, 100);
         }
 
-        function initializeGame() {
-            platforms = [];
-            for (let i = 0; i < 10; i++) {
-                platforms.push({
-                    x: Math.random() * (canvas.width - 60),
-                    y: i * 60,
-                    width: 60,
-                    height: 10,
-                });
-            }
-
-            // Solide Plattform für den Start
-            platforms[platforms.length - 1].x = 170;
-            platforms[platforms.length - 1].y = canvas.height - 50;
-
-            player.x = platforms[platforms.length - 1].x + 15; // Start mittig auf Plattform
-            player.y = platforms[platforms.length - 1].y - player.height;
-            player.dy = 0;
-            player.dx = 0;
-            player.score = 0;
+        function resetGame() {
+            snake = [{ x: 200, y: 200 }];
+            direction = { x: 0, y: 0 };
         }
 
-        function drawPlayer() {
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+        function spawnFood() {
+            food.x = Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize;
+            food.y = Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize;
         }
 
-        function drawPlatforms() {
-            platforms.forEach((platform) => {
-                ctx.fillStyle = "black";
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+        function drawSnake() {
+            snake.forEach(segment => {
+                ctx.fillStyle = player.color;
+                ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+                ctx.strokeStyle = "black";
+                ctx.strokeRect(segment.x, segment.y, gridSize, gridSize);
             });
         }
 
-        function updatePlayer() {
-            player.dy += 0.5; // Gravity
-            player.y += player.dy;
-
-            // Horizontal Movement
-            if (keys["ArrowLeft"] && player.x > 0) {
-                player.dx = -3;
-            } else if (keys["ArrowRight"] && player.x < canvas.width - player.width) {
-                player.dx = 3;
-            } else {
-                player.dx = 0;
-            }
-            player.x += player.dx;
-
-            if (player.y > canvas.height) {
-                endGame();
-            }
-
-            if (player.y < canvas.height / 2) {
-                platforms.forEach((platform) => {
-                    platform.y += Math.abs(player.dy);
-                    if (platform.y > canvas.height) {
-                        platform.y = -10;
-                        platform.x = Math.random() * (canvas.width - platform.width);
-                        player.score++;
-                    }
-                });
-            }
-
-            platforms.forEach((platform) => {
-                if (
-                    player.y + player.height > platform.y &&
-                    player.y + player.height < platform.y + platform.height &&
-                    player.x + player.width > platform.x &&
-                    player.x < platform.x + platform.width &&
-                    player.dy > 0
-                ) {
-                    player.dy = -10;
-                }
-            });
+        function drawFood() {
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x, food.y, gridSize, gridSize);
         }
 
-        function endGame() {
-            gameRunning = false;
-            highscores.push({ name: player.name, score: player.score });
-            highscores.sort((a, b) => b.score - a.score);
-            localStorage.setItem("highscores", JSON.stringify(highscores));
-            updateHighscoreList();
-            menu.style.display = "block";
-            canvas.style.display = "none";
+        function moveSnake(directionInput) {
+            switch (directionInput) {
+                case "up":
+                    if (direction.y === 0) direction = { x: 0, y: -gridSize };
+                    break;
+                case "down":
+                    if (direction.y === 0) direction = { x: 0, y: gridSize };
+                    break;
+                case "left":
+                    if (direction.x === 0) direction = { x: -gridSize, y: 0 };
+                    break;
+                case "right":
+                    if (direction.x === 0) direction = { x: gridSize, y: 0 };
+                    break;
+            }
         }
 
         function updateGame() {
-            if (!gameRunning) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlatforms();
-            drawPlayer();
-            updatePlayer();
+
+            // Bewegung der Schlange
+            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+            snake.unshift(head);
+
+            // Essen fressen
+            if (head.x === food.x && head.y === food.y) {
+                player.score++;
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+
+            // Kollisionen prüfen
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || snake.some((seg, i) => i !== 0 && seg.x === head.x && seg.y === head.y)) {
+                alert(`Igra završena! Rezultat: ${player.score}`);
+                clearInterval(gameInterval);
+                menu.style.display = "block";
+                canvas.style.display = "none";
+                controls.style.display = "none";
+            }
+
+            drawSnake();
+            drawFood();
 
             ctx.fillStyle = "black";
             ctx.font = "20px Arial";
             ctx.fillText(`Rezultat: ${player.score}`, 10, 20);
-
-            requestAnimationFrame(updateGame);
         }
-
-        // Steuerung
-        window.addEventListener("keydown", (e) => {
-            keys[e.key] = true;
-        });
-
-        window.addEventListener("keyup", (e) => {
-            keys[e.key] = false;
-        });
-
-        updateHighscoreList();
     </script>
 </body>
 </html>
