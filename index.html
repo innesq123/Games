@@ -3,192 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zmija - Moderno</title>
+    <title>Zmija - Igra</title>
     <style>
         body {
             margin: 0;
+            padding: 0;
             font-family: Arial, sans-serif;
-            background: linear-gradient(45deg, #3a1c71, #d76d77, #ffaf7b);
+            background: linear-gradient(to bottom, #ffcc70, #ff6f61);
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
         }
 
+        .menu {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1.5s;
+        }
+
         h1 {
-            color: #fff;
-            font-size: 3em;
+            color: #333;
+            font-size: 2.5em;
             margin-bottom: 10px;
         }
 
-        .menu-container {
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        canvas {
-            border: 3px solid white;
-            background: #f4f9f4;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .menu-container.active {
-            display: block;
+        p {
+            color: #555;
+            font-size: 1.2em;
+            margin-bottom: 20px;
         }
 
         input {
             padding: 10px;
-            font-size: 1em;
-            border-radius: 5px;
-            border: 2px solid #ccc;
+            font-size: 1.2em;
+            border: 2px solid #ff6f61;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: block;
             width: 80%;
-            margin-bottom: 15px;
+            margin: 10px auto;
         }
 
         button {
-            padding: 10px 20px;
-            font-size: 1em;
-            background: #00b09b;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: #ff6f61;
             color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #ff3d3d;
+            transform: scale(1.05);
+        }
+
+        .highscores {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .highscores h2 {
+            font-size: 1.5em;
+            color: #333;
+        }
+
+        .highscores ol {
+            list-style: none;
+            padding: 0;
+        }
+
+        .highscores li {
+            background: #ffcc70;
+            margin: 5px 0;
+            padding: 5px 10px;
+            border-radius: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        canvas {
+            display: none;
+            border: 5px solid #333;
+            background: #f0f0f0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bravo {
+            display: none;
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            color: #ff6f61;
+            font-size: 2em;
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: fadeInOut 1.5s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% {
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="menu-container" id="menu">
+    <!-- Hauptmenü -->
+    <div class="menu" id="menu">
         <h1>Zmija</h1>
         <p>Unesite svoje ime za početak:</p>
         <input type="text" id="playerName" placeholder="Vaše ime">
         <button onclick="startGame()">Započni igru</button>
+        <div class="highscores">
+            <h2>Highscores:</h2>
+            <ol id="highscoreList"></ol>
+        </div>
     </div>
-    <canvas id="gameCanvas" width="600" height="600"></canvas>
+
+    <!-- Spielfeld -->
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <!-- Bravo-Nachricht -->
+    <div class="bravo" id="bravo">Bravo!</div>
 
     <script>
+        const highscores = JSON.parse(localStorage.getItem('highscores')) || [];
         const menu = document.getElementById('menu');
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        let snake = [];
-        let food = { x: 0, y: 0, color: 'red' };
+        const playerNameInput = document.getElementById('playerName');
+        const highscoreList = document.getElementById('highscoreList');
+        const gameCanvas = document.getElementById('gameCanvas');
+        const ctx = gameCanvas.getContext('2d');
+        const bravo = document.getElementById('bravo');
+
+        let snake = [{ x: 200, y: 200 }];
+        let food = { x: 0, y: 0 };
         let direction = { x: 0, y: 0 };
         let score = 0;
-        let gameInterval;
+        let nameAttempts = 0;
 
-        // Spiel starten
         function startGame() {
-            const playerName = document.getElementById('playerName').value.trim();
+            const playerName = playerNameInput.value.trim();
             if (!playerName) {
-                alert('Molim vas unesite ime!');
+                if (nameAttempts === 0) {
+                    alert("A ime dodati?");
+                } else if (nameAttempts === 1) {
+                    alert("Jesi smotan de dodaj ime");
+                } else if (nameAttempts === 2) {
+                    alert("Mama to si sigurno ti de uzmi naučale");
+                }
+                nameAttempts++;
                 return;
             }
 
+            nameAttempts = 0;
             menu.style.display = 'none';
-            canvas.style.display = 'block';
-            resetGame();
-            gameInterval = setInterval(gameLoop, 150);
-        }
+            gameCanvas.style.display = 'block';
 
-        // Reset Game
-        function resetGame() {
-            snake = [{ x: canvas.width / 2, y: canvas.height / 2 }];
-            direction = { x: 0, y: 0 };
+            snake = [{ x: 200, y: 200 }];
+            direction = { x: 0, y: -20 };
             score = 0;
-            spawnFood();
+
+            placeFood();
+            updateGame();
         }
 
-        // Essen platzieren direkt über der Schlange
-        function spawnFood() {
-            food.x = snake[0].x;
-            food.y = snake[0].y - 20;
-
-            if (food.y < 0) {
-                food.y = canvas.height - 20;
-            }
-
-            food.color = `hsl(${Math.random() * 360}, 70%, 50%)`; // Zufällige Farbe
+        function updateHighscores() {
+            highscoreList.innerHTML = highscores
+                .map((score, index) => `<li>${index + 1}. ${score.name}: ${score.points}</li>`)
+                .join('');
         }
 
-        // Schlange zeichnen
-        function drawSnake() {
-            ctx.fillStyle = 'green';
-            snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
+        function placeFood() {
+            food.x = Math.floor(Math.random() * 20) * 20;
+            food.y = Math.floor(Math.random() * 20) * 20;
         }
 
-        // Essen zeichnen
-        function drawFood() {
-            ctx.fillStyle = food.color;
+        function drawGame() {
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+            snake.forEach(segment => {
+                ctx.fillStyle = 'green';
+                ctx.fillRect(segment.x, segment.y, 20, 20);
+            });
+
+            ctx.fillStyle = 'red';
             ctx.beginPath();
             ctx.arc(food.x + 10, food.y + 10, 10, 0, Math.PI * 2);
             ctx.fill();
         }
 
-        // Spiel aktualisieren
-        function updateGame() {
-            if (direction.x === 0 && direction.y === 0) {
-                return;
-            }
-
+        function moveSnake() {
             const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
-            // Kollision mit der Wand
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
-                gameOver();
-                return;
-            }
-
-            // Kollision mit der eigenen Schlange
-            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                gameOver();
-                return;
-            }
-
             snake.unshift(head);
 
-            // Essen gefressen
             if (head.x === food.x && head.y === food.y) {
                 score++;
-                spawnFood();
+                placeFood();
+                if (score % 10 === 0) showBravo();
             } else {
                 snake.pop();
             }
+
+            if (
+                head.x < 0 || head.y < 0 ||
+                head.x >= gameCanvas.width || head.y >= gameCanvas.height ||
+                snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
+            ) {
+                endGame();
+            }
         }
 
-        // Spiel zeichnen
-        function drawGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawSnake();
-            drawFood();
-            ctx.fillStyle = 'black';
-            ctx.font = '20px Arial';
-            ctx.fillText(`Bodovi: ${score}`, 10, 20);
+        function showBravo() {
+            bravo.style.display = 'block';
+            setTimeout(() => bravo.style.display = 'none', 1000);
         }
 
-        // Hauptspiel-Loop
-        function gameLoop() {
-            updateGame();
-            drawGame();
-        }
+        function endGame() {
+            const playerName = playerNameInput.value.trim();
+            highscores.push({ name: playerName, points: score });
+            highscores.sort((a, b) => b.points - a.points);
+            highscores.splice(10);
+            localStorage.setItem('highscores', JSON.stringify(highscores));
 
-        // Game Over
-        function gameOver() {
-            clearInterval(gameInterval);
-            alert(`Igra je završena! Bodovi: ${score}`);
+            alert(`Kraj igre! Bodovi: ${score}`);
             menu.style.display = 'block';
-            canvas.style.display = 'none';
+            gameCanvas.style.display = 'none';
+            updateHighscores();
         }
 
-        // Bewegung der Schlange
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' && direction.y === 0) direction = { x: 0, y: -20 };
-            if (e.key === 'ArrowDown' && direction.y === 0) direction = { x: 0, y: 20 };
-            if (e.key === 'ArrowLeft' && direction.x === 0) direction = { x: -20, y: 0 };
-            if (e.key === 'ArrowRight' && direction.x === 0) direction = { x: 20, y: 0 };
+        function updateGame() {
+            moveSnake();
+            drawGame();
+            setTimeout(updateGame, 100);
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'ArrowUp' && direction.y === 0) direction = { x: 0, y: -20 };
+            if (event.key === 'ArrowDown' && direction.y === 0) direction = { x: 0, y: 20 };
+            if (event.key === 'ArrowLeft' && direction.x === 0) direction = { x: -20, y: 0 };
+            if (event.key === 'ArrowRight' && direction.x === 0) direction = { x: 20, y: 0 };
         });
+
+        updateHighscores();
     </script>
 </body>
 </html>
