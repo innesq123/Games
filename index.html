@@ -1,215 +1,104 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zmija - Igra</title>
+    <title>Mini Open-World Game</title>
     <style>
         body {
             margin: 0;
-            padding: 0;
+            overflow: hidden;
             font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom, #a8e6cf, #dcedc1);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
         }
-
-        .menu {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        h1 {
-            color: #388e3c;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        p {
-            color: #555;
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
-
-        input {
-            padding: 10px;
-            font-size: 1.2em;
-            border: 2px solid #388e3c;
-            border-radius: 10px;
-            width: 80%;
-            margin-bottom: 20px;
-        }
-
-        button {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            background: #388e3c;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        button:hover {
-            background: #2e7d32;
-        }
-
         canvas {
-            display: none;
-            background: #fff;
-            border: 5px solid #388e3c;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        .bravo {
-            display: none;
-            position: absolute;
-            top: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.9);
-            color: #388e3c;
-            font-size: 2em;
-            padding: 10px 20px;
-            border-radius: 10px;
-            animation: fadeInOut 1.5s ease-in-out;
-        }
-
-        @keyframes fadeInOut {
-            0%, 100% {
-                opacity: 0;
-            }
-            50% {
-                opacity: 1;
-            }
+            display: block;
+            background: #87CEEB; /* Himmel */
         }
     </style>
 </head>
 <body>
-    <div class="menu" id="menu">
-        <h1>Zmija</h1>
-        <p>Unesite svoje ime za početak:</p>
-        <input type="text" id="playerName" placeholder="Vaše ime">
-        <button onclick="startGame()">Započni igru</button>
-    </div>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <div class="bravo" id="bravo">Bravo!</div>
-
+    <canvas id="gameCanvas"></canvas>
     <script>
-        const menu = document.getElementById("menu");
-        const playerNameInput = document.getElementById("playerName");
-        const gameCanvas = document.getElementById("gameCanvas");
-        const ctx = gameCanvas.getContext("2d");
-        const bravo = document.getElementById("bravo");
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-        let snake = [{ x: 200, y: 200 }];
-        let food = { x: 200, y: 160 };
-        let direction = { x: 0, y: 0 };
-        let score = 0;
-        let nameAttempts = 0;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-        function startGame() {
-            const playerName = playerNameInput.value.trim();
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            width: 40,
+            height: 40,
+            color: "red",
+            speed: 5,
+        };
 
-            if (!playerName) {
-                if (nameAttempts === 0) {
-                    alert("A ime dodati?");
-                } else if (nameAttempts === 1) {
-                    alert("Jesi smotan de dodaj ime");
-                } else if (nameAttempts === 2) {
-                    alert("Mama to si sigurno ti de uzmi naučale");
-                }
-                nameAttempts++;
-                return;
-            }
+        const map = {
+            width: 2000,
+            height: 2000,
+            color: "#228B22", // Gras
+        };
 
-            nameAttempts = 0;
-            menu.style.display = "none";
-            gameCanvas.style.display = "block";
-            score = 0;
-            snake = [{ x: 200, y: 200 }];
-            direction = { x: 0, y: 0 };
-            food = { x: 200, y: 160 };
-            updateGame();
-        }
+        const camera = {
+            x: 0,
+            y: 0,
+        };
 
-        function placeFood() {
-            food.x = Math.floor(Math.random() * 20) * 20;
-            food.y = Math.floor(Math.random() * 20) * 20;
-        }
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+        };
 
-        function showBravo() {
-            bravo.style.display = "block";
-            setTimeout(() => {
-                bravo.style.display = "none";
-            }, 1000);
-        }
-
-        function drawGame() {
-            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-
-            snake.forEach((segment, index) => {
-                ctx.fillStyle = index === 0 ? "darkgreen" : "lightgreen";
-                ctx.fillRect(segment.x, segment.y, 20, 20);
-            });
-
-            ctx.fillStyle = "red";
-            ctx.beginPath();
-            ctx.arc(food.x + 10, food.y + 10, 10, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = "black";
-            ctx.font = "20px Arial";
-            ctx.fillText(`Bodovi: ${score}`, 10, 20);
-        }
-
-        function moveSnake() {
-            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-            snake.unshift(head);
-
-            if (head.x === food.x && head.y === food.y) {
-                score++;
-                placeFood();
-                if (score % 10 === 0) {
-                    showBravo();
-                }
-            } else {
-                snake.pop();
-            }
-
-            if (
-                head.x < 0 || head.y < 0 ||
-                head.x >= gameCanvas.width || head.y >= gameCanvas.height ||
-                snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
-            ) {
-                endGame();
-            }
-        }
-
-        function endGame() {
-            alert(`Kraj igre! Bodovi: ${score}`);
-            menu.style.display = "block";
-            gameCanvas.style.display = "none";
-        }
-
-        function updateGame() {
-            moveSnake();
-            drawGame();
-            setTimeout(updateGame, 100);
-        }
-
-        document.addEventListener("keydown", event => {
-            if (event.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -20 };
-            if (event.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 20 };
-            if (event.key === "ArrowLeft" && direction.x === 0) direction = { x: -20, y: 0 };
-            if (event.key === "ArrowRight" && direction.x === 0) direction = { x: 20, y: 0 };
+        window.addEventListener("keydown", (e) => {
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
         });
+
+        window.addEventListener("keyup", (e) => {
+            if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+        });
+
+        function movePlayer() {
+            if (keys.ArrowUp) player.y -= player.speed;
+            if (keys.ArrowDown) player.y += player.speed;
+            if (keys.ArrowLeft) player.x -= player.speed;
+            if (keys.ArrowRight) player.x += player.speed;
+
+            // Grenzen des Spielfelds
+            player.x = Math.max(0, Math.min(map.width - player.width, player.x));
+            player.y = Math.max(0, Math.min(map.height - player.height, player.y));
+        }
+
+        function updateCamera() {
+            camera.x = Math.max(0, Math.min(map.width - canvas.width, player.x + player.width / 2 - canvas.width / 2));
+            camera.y = Math.max(0, Math.min(map.height - canvas.height, player.y + player.height / 2 - canvas.height / 2));
+        }
+
+        function drawMap() {
+            ctx.fillStyle = map.color;
+            ctx.fillRect(-camera.x, -camera.y, map.width, map.height);
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - camera.x, player.y - camera.y, player.width, player.height);
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            movePlayer();
+            updateCamera();
+
+            drawMap();
+            drawPlayer();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
     </script>
 </body>
 </html>
