@@ -14,136 +14,170 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            overflow: hidden;
         }
+
         h1 {
-            margin: 10px;
             color: #ffffff;
+            font-size: 3em;
             text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
         }
+
+        .menu, .game-board {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu {
+            text-align: center;
+        }
+
+        .menu button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 1.5em;
+            color: white;
+            background-color: #ff6f61;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .menu button:hover {
+            transform: scale(1.1);
+            background-color: #ff3b3b;
+        }
+
         .game-board {
             width: 300px;
-            height: 300px;
-            display: grid;
-            grid-template-columns: repeat(10, 30px);
-            grid-template-rows: repeat(10, 30px);
-            background: #ffffff;
+            height: 400px;
+            background: white;
             border: 5px solid #ff6f61;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            position: relative;
         }
+
         .cell {
-            width: 30px;
-            height: 30px;
-            border: 1px solid #eee;
+            width: 100%;
+            height: 100%;
+            border: 1px solid #f3f3f3;
             box-sizing: border-box;
         }
+
         .block {
+            position: absolute;
             width: 30px;
             height: 30px;
-            background: #ff6f61;
             border-radius: 5px;
-            position: absolute;
+            background-color: #ff6f61;
             cursor: grab;
         }
-        .block:active {
-            cursor: grabbing;
-        }
-        .controls {
-            display: flex;
+
+        .scoreboard {
             margin-top: 20px;
+            font-size: 1.2em;
+            color: white;
         }
-        .score {
-            margin-top: 10px;
+
+        .message {
+            font-size: 1.5em;
             color: #ffffff;
-            font-size: 20px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Mama Reda Šerpe</h1>
-    <div class="game-board" id="gameBoard"></div>
-    <div class="controls" id="controls"></div>
-    <div class="score" id="score">Bodovi: 0</div>
+    <div class="menu" id="menu">
+        <h1>Mama Reda Šerpe</h1>
+        <button onclick="startGame()">Započni igru</button>
+    </div>
+
+    <div class="game-board" id="gameBoard" style="display:none;">
+        <!-- Cells werden dynamisch erstellt -->
+    </div>
+
+    <div class="scoreboard" id="scoreboard" style="display:none;">
+        Bodovi: <span id="score">0</span>
+    </div>
+
+    <div class="message" id="message"></div>
 
     <script>
-        const gameBoard = document.getElementById("gameBoard");
-        const controls = document.getElementById("controls");
-        const scoreDisplay = document.getElementById("score");
+        const menu = document.getElementById('menu');
+        const gameBoard = document.getElementById('gameBoard');
+        const scoreboard = document.getElementById('scoreboard');
+        const scoreDisplay = document.getElementById('score');
+        const message = document.getElementById('message');
+
         const boardSize = 10;
-        const cellSize = 30;
+        const cells = [];
         let score = 0;
 
-        // Initialisiere das Spielfeld
-        const board = [];
-        for (let i = 0; i < boardSize; i++) {
-            const row = [];
-            for (let j = 0; j < boardSize; j++) {
-                const cell = document.createElement("div");
-                cell.classList.add("cell");
+        // Spielfeld erstellen
+        function createGameBoard() {
+            gameBoard.innerHTML = '';
+            for (let i = 0; i < boardSize * boardSize; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
                 gameBoard.appendChild(cell);
-                row.push(0);
-            }
-            board.push(row);
-        }
-
-        // Generiere Blöcke
-        function generateBlocks() {
-            controls.innerHTML = ""; // Leere vorherige Blöcke
-            for (let i = 0; i < 3; i++) {
-                const block = document.createElement("div");
-                block.classList.add("block");
-                block.style.left = `${i * 50}px`;
-                block.dataset.value = Math.floor(Math.random() * 3) + 1; // Zufälliger Wert
-                block.style.background = getColor(block.dataset.value);
-                block.draggable = true;
-
-                // Drag-and-Drop-Ereignisse
-                block.addEventListener("dragstart", (e) => {
-                    e.dataTransfer.setData("text/plain", block.dataset.value);
-                });
-
-                controls.appendChild(block);
+                cells.push(cell);
             }
         }
 
-        // Füge Farben hinzu
-        function getColor(value) {
-            switch (value) {
-                case "1":
-                    return "#ff6f61";
-                case "2":
-                    return "#6fcf97";
-                case "3":
-                    return "#56ccf2";
-                default:
-                    return "#ddd";
-            }
-        }
+        // Blöcke erstellen
+        function createBlock() {
+            const block = document.createElement('div');
+            block.classList.add('block');
+            block.style.left = Math.random() * 250 + 'px';
+            block.style.top = '0px';
 
-        // Überprüfe das Raster
-        function checkBoard() {
-            for (let i = 0; i < boardSize; i++) {
-                if (board[i].every((cell) => cell > 0)) {
-                    score += 10;
-                    board[i].fill(0); // Leere die Reihe
-                    updateBoard();
-                }
-            }
-        }
-
-        // Aktualisiere das Spielfeld
-        function updateBoard() {
-            const cells = document.querySelectorAll(".cell");
-            cells.forEach((cell, index) => {
-                const x = Math.floor(index / boardSize);
-                const y = index % boardSize;
-                cell.style.background = board[x][y] > 0 ? getColor(board[x][y].toString()) : "#ffffff";
+            block.addEventListener('mousedown', () => {
+                message.innerText = 'Drži blok!';
             });
-            scoreDisplay.textContent = `Bodovi: ${score}`;
+
+            block.addEventListener('mouseup', () => {
+                message.innerText = '';
+                // Logik für "Blok stavljen!"
+                score += 10;
+                scoreDisplay.innerText = score;
+
+                if (score % 50 === 0) {
+                    message.innerText = 'Bravo!';
+                    setTimeout(() => {
+                        message.innerText = '';
+                    }, 2000);
+                }
+            });
+
+            gameBoard.appendChild(block);
         }
 
-        // Starte das Spiel
-        generateBlocks();
-        updateBoard();
+        // Spiel starten
+        function startGame() {
+            menu.style.display = 'none';
+            gameBoard.style.display = 'grid';
+            scoreboard.style.display = 'block';
+
+            createGameBoard();
+            createBlock();
+
+            message.innerText = 'Pripremi se!';
+        }
+
+        // Reset für das Spiel
+        function resetGame() {
+            score = 0;
+            scoreDisplay.innerText = score;
+            message.innerText = 'Ponovo kreni!';
+            gameBoard.innerHTML = '';
+        }
     </script>
 </body>
 </html>
