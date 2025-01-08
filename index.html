@@ -1,288 +1,227 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DMG Revolver</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: black;
-            color: white;
-            margin: 0;
-            text-align: center;
-        }
-        canvas {
-            display: block;
-            margin: 20px auto;
-            background-color: #222;
-            border: 2px solid white;
-        }
-        .menu, .game, .game-over {
-            display: none;
-        }
-        .menu button, .menu input {
-            margin: 10px;
-            padding: 10px;
-            font-size: 18px;
-        }
-        .leaderboard {
-            margin: 20px auto;
-            padding: 10px;
-            border-radius: 10px;
-            background-color: #333;
-            color: white;
-            width: 300px;
-        }
-        .rank {
-            margin: 5px 0;
-            font-size: 16px;
-        }
-        .gold { color: gold; }
-        .silver { color: silver; }
-        .bronze { color: #cd7f32; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Bird Clone</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #87CEEB;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #87CEEB; /* Himmelblauer Hintergrund */
+    }
+
+    .menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      text-align: center;
+      padding: 20px;
+      border-radius: 10px;
+      display: none;
+      width: 300px;
+    }
+
+    .menu.active {
+      display: block;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+  </style>
 </head>
 <body>
-    <h1>DMG Revolver</h1>
+  <!-- Hauptmenü -->
+  <div id="main-menu" class="menu active">
+    <h1>Flappy Bird Clone</h1>
+    <button onclick="startGame()">Start</button>
+  </div>
 
-    <!-- Hauptmenü -->
-    <div class="menu" id="mainMenu">
-        <h2>Hauptmenü</h2>
-        <label for="playerName">Spielername:</label>
-        <input type="text" id="playerName" placeholder="Name eingeben" />
-        <br>
-        <button onclick="startGame()">Spiel starten</button>
-        <button onclick="showLeaderboard()">Bestenliste</button>
-    </div>
+  <!-- Spielfläche -->
+  <canvas id="gameCanvas" width="400" height="600"></canvas>
 
-    <!-- Bestenliste -->
-    <div class="menu" id="leaderboard">
-        <h2>Top-Spieler</h2>
-        <div class="leaderboard" id="leaderboardList">
-            <p class="rank gold">1. ---</p>
-            <p class="rank silver">2. ---</p>
-            <p class="rank bronze">3. ---</p>
-        </div>
-        <button onclick="backToMenu()">Zurück</button>
-    </div>
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    <!-- Spiel -->
-    <div class="game" id="gameArea">
-        <canvas id="gameCanvas" width="600" height="600"></canvas>
-        <p id="scoreDisplay">Punkte: 0</p>
-    </div>
+    // Pixel-genauer Vogel, basierend auf deinem neuen 2D-Array
+    const birdPixels = [
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 1, 1, 4, 4, 4, 4, 1, 1, 0, 0, 0],
+      [0, 0, 0, 1, 4, 5, 5, 5, 5, 1, 2, 1, 0, 0, 0],
+      [0, 0, 1, 5, 5, 5, 5, 5, 1, 2, 1, 2, 1, 0, 0],
+      [0, 1, 5, 5, 5, 5, 5, 5, 1, 2, 2, 1, 0, 0, 0],
+      [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+    ];
 
-    <!-- Game Over -->
-    <div class="game-over" id="gameOver">
-        <h2>Spiel vorbei!</h2>
-        <p id="finalScore">Dein Punktestand: 0</p>
-        <button onclick="backToMenu()">Zurück zum Menü</button>
-    </div>
+    const colors = {
+      0: "#87CEEB", // Blau (Hintergrund)
+      1: "#000000", // Schwarz (Kontur)
+      2: "#FFFFFF", // Weiß
+      3: "#FFA500", // Orange
+      4: "#ADD8E6", // Hellblau
+      5: "#008000", // Grün
+    };
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const playerNameInput = document.getElementById('playerName');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const finalScoreDisplay = document.getElementById('finalScore');
-        const leaderboardList = document.getElementById('leaderboardList');
+    const birdWidth = 30; // Kleinere Größe
+    const birdHeight = 24;
 
-        let gameState;
-        let score;
-        let pacMan;
-        let ghosts;
-        let dots;
-        let highScores = [
-            { name: "---", score: 0 },
-            { name: "---", score: 0 },
-            { name: "---", score: 0 }
-        ];
-        let animationId;
+    let birdX = 50;
+    let birdY = canvas.height / 2;
+    let birdVelocity = 0;
+    const gravity = 0.4;
+    const jumpForce = -6;
 
-        function resetGame() {
-            gameState = 'playing';
-            score = 0;
+    let pipes = [];
+    const pipeWidth = 40;
+    const pipeGap = 120;
+    const pipeSpeed = 2;
 
-            pacMan = {
-                x: 300,
-                y: 300,
-                size: 20,
-                speed: 2,
-                direction: { x: 0, y: 0 },
-                poweredUp: false,
-                poweredUpTime: 0
-            };
+    let score = 0;
+    let gameRunning = false;
+    let gameStarted = false;
 
-            ghosts = [
-                { x: 100, y: 100, speed: 1, direction: { x: 1, y: 0 }, canWalkThroughWalls: true },
-                { x: 500, y: 500, speed: 1, direction: { x: -1, y: 0 }, canWalkThroughWalls: false }
-            ];
-
-            dots = [];
-            for (let i = 0; i < 20; i++) {
-                for (let j = 0; j < 20; j++) {
-                    dots.push({ x: i * 30 + 15, y: j * 30 + 15, eaten: false });
-                }
-            }
-        }
-
-        function startGame() {
-            const playerName = playerNameInput.value.trim();
-            if (!playerName) {
-                alert("Bitte gib deinen Spielernamen ein!");
-                return;
-            }
-
-            document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('gameArea').style.display = 'block';
-            resetGame();
-            gameLoop();
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            updatePacMan();
-            drawPacMan();
-
-            updateGhosts();
-            drawGhosts();
-
-            drawDots();
-            checkCollisions();
-
-            scoreDisplay.textContent = `Punkte: ${score}`;
-
-            if (gameState === 'playing') {
-                animationId = requestAnimationFrame(gameLoop);
-            } else {
-                endGame();
-            }
-        }
-
-        function updatePacMan() {
-            pacMan.x += pacMan.direction.x * pacMan.speed;
-            pacMan.y += pacMan.direction.y * pacMan.speed;
-
-            if (pacMan.x < 0) pacMan.x = canvas.width;
-            if (pacMan.x > canvas.width) pacMan.x = 0;
-            if (pacMan.y < 0) pacMan.y = canvas.height;
-            if (pacMan.y > canvas.height) pacMan.y = 0;
-
-            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
-                pacMan.poweredUpTime--;
-            } else {
-                pacMan.poweredUp = false;
-                pacMan.speed = 2;
-            }
-        }
-
-        function drawPacMan() {
-            ctx.fillStyle = pacMan.poweredUp ? 'yellow' : 'gold';
-            ctx.beginPath();
-            ctx.arc(pacMan.x, pacMan.y, pacMan.size, 0.2 * Math.PI, 1.8 * Math.PI);
-            ctx.lineTo(pacMan.x, pacMan.y);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function updateGhosts() {
-            ghosts.forEach(ghost => {
-                ghost.x += ghost.direction.x * ghost.speed;
-                ghost.y += ghost.direction.y * ghost.speed;
-
-                if (!ghost.canWalkThroughWalls) {
-                    if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
-                        ghost.direction.x = -ghost.direction.x;
-                        ghost.direction.y = -ghost.direction.y;
-                    }
-                }
-            });
-        }
-
-        function drawGhosts() {
-            ghosts.forEach(ghost => {
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-        }
-
-        function drawDots() {
-            dots.forEach(dot => {
-                if (!dot.eaten) {
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath();
-                    ctx.arc(dot.x, dot.y, 5, 0, 2 * Math.PI);
-                    ctx.fill();
-                }
-            });
-        }
-
-        function checkCollisions() {
-            dots.forEach(dot => {
-                if (!dot.eaten && Math.hypot(dot.x - pacMan.x, dot.y - pacMan.y) < pacMan.size) {
-                    dot.eaten = true;
-                    score += 100;
-                    if (score % 1000 === 0) {
-                        pacMan.poweredUp = true;
-                        pacMan.poweredUpTime = 180; // 3 Sekunden
-                        pacMan.speed = 4;
-                    }
-                }
-            });
-
-            ghosts.forEach(ghost => {
-                if (Math.hypot(ghost.x - pacMan.x, ghost.y - pacMan.y) < pacMan.size + 20) {
-                    gameState = 'game-over';
-                }
-            });
-        }
-
-        function endGame() {
-            cancelAnimationFrame(animationId);
-            const playerName = playerNameInput.value.trim();
-            updateHighScores(playerName, score);
-            showGameOverScreen();
-        }
-
-        function updateHighScores(name, score) {
-            highScores.push({ name, score });
-            highScores.sort((a, b) => b.score - a.score);
-            highScores = highScores.slice(0, 3);
-        }
-
-        function showLeaderboard() {
-            const leaderboardHtml = highScores.map((entry, index) => {
-                const medalClass = index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze';
-                return `<p class="rank ${medalClass}">${index + 1}. ${entry.name}: ${entry.score}</p>`;
-            }).join('');
-            leaderboardList.innerHTML = leaderboardHtml;
-
-            document.getElementById('mainMenu').style.display = 'none';
-            document.getElementById('leaderboard').style.display = 'block';
-        }
-
-        function showGameOverScreen() {
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('gameOver').style.display = 'block';
-            finalScoreDisplay.textContent = `Dein Punktestand: ${score}`;
-        }
-
-        function backToMenu() {
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('leaderboard').style.display = 'none';
-            document.getElementById('mainMenu').style.display = 'block';
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') pacMan.direction = { x: 0, y: -1 };
-            if (e.key === 'ArrowDown') pacMan.direction = { x: 0, y: 1 };
-            if (e.key === 'ArrowLeft') pacMan.direction = { x: -1, y: 0 };
-            if (e.key === 'ArrowRight') pacMan.direction = { x: 1, y: 0 };
+    // Vogel zeichnen
+    function drawBird() {
+      birdPixels.forEach((row, y) => {
+        row.forEach((pixel, x) => {
+          if (pixel !== 0) {
+            ctx.fillStyle = colors[pixel];
+            ctx.fillRect(
+              birdX + x * (birdWidth / birdPixels[0].length),
+              birdY + y * (birdHeight / birdPixels.length),
+              birdWidth / birdPixels[0].length,
+              birdHeight / birdPixels.length
+            );
+          }
         });
-    </script>
+      });
+    }
+
+    // Hindernisse erstellen
+    function createPipe() {
+      const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
+      pipes.push({ x: canvas.width, topHeight: pipeHeight });
+    }
+
+    // Hindernisse zeichnen
+    function drawPipes() {
+      ctx.fillStyle = "green";
+      pipes.forEach((pipe) => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+        ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
+      });
+    }
+
+    // Hindernisse bewegen
+    function movePipes() {
+      pipes.forEach((pipe) => {
+        pipe.x -= pipeSpeed;
+      });
+      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
+        pipes.shift();
+        score++;
+      }
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        createPipe();
+      }
+    }
+
+    // Spiel-Logik
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Hindernisse bewegen und zeichnen
+      movePipes();
+      drawPipes();
+
+      // Vogel-Schwerkraft
+      if (gameStarted) {
+        birdVelocity += gravity;
+        birdY += birdVelocity;
+      }
+
+      // Vogel zeichnen
+      drawBird();
+
+      // Kollisionserkennung
+      if (birdY + birdHeight > canvas.height || birdY < 0) {
+        endGame();
+      }
+
+      pipes.forEach((pipe) => {
+        if (
+          birdX < pipe.x + pipeWidth &&
+          birdX + birdWidth > pipe.x &&
+          (birdY < pipe.topHeight || birdY + birdHeight > pipe.topHeight + pipeGap)
+        ) {
+          endGame();
+        }
+      });
+
+      // Score anzeigen
+      ctx.fillStyle = "white";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Spiel starten
+    function startGame() {
+      const mainMenu = document.getElementById("main-menu");
+      mainMenu.classList.remove("active");
+      birdY = canvas.height / 2;
+      birdVelocity = 0;
+      pipes = [];
+      score = 0;
+      gameRunning = true;
+      gameStarted = false;
+      createPipe();
+      gameLoop();
+    }
+
+    function endGame() {
+      gameRunning = false;
+      alert(`Game Over! Dein Score: ${score}`);
+      const mainMenu = document.getElementById("main-menu");
+      mainMenu.classList.add("active");
+    }
+
+    canvas.addEventListener("click", () => {
+      if (!gameStarted) {
+        gameStarted = true;
+        return;
+      }
+      birdVelocity = jumpForce;
+    });
+  </script>
 </body>
 </html>
