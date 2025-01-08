@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Bird - Kemal</title>
+  <title>Flappy Bird Clone</title>
   <style>
     body {
       margin: 0;
@@ -15,46 +15,98 @@
     canvas {
       display: block;
       margin: 0 auto;
-      background: #87CEEB;
+      background: #87CEEB; /* Himmelblauer Hintergrund */
     }
 
-    #start-overlay {
+    .menu {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 36px;
-      color: rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      text-align: center;
+      padding: 20px;
+      border-radius: 10px;
       display: none;
+      width: 300px;
+    }
+
+    .menu.active {
+      display: block;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    .leaderboard {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .leaderboard h3 {
+      margin: 0;
+    }
+
+    .leaderboard ul {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+    }
+
+    .leaderboard li {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
-  <div id="start-overlay">Tippe zum Starten</div>
+  <!-- Hauptmenü -->
+  <div id="main-menu" class="menu active">
+    <h1>Flappy Bird</h1>
+    <button onclick="startGame()">Start</button>
+    <div class="leaderboard">
+      <h3>Bestenliste</h3>
+      <ul id="leaderboard"></ul>
+    </div>
+  </div>
+
+  <!-- Spielfläche -->
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Spielvariablen
     const birdPixels = [
-      [0, 0, 1, 1, 1, 1, 0, 0],
-      [0, 1, 3, 1, 1, 3, 1, 0],
-      [1, 3, 1, 1, 1, 1, 3, 1],
-      [1, 3, 1, 1, 1, 1, 3, 1],
-      [0, 1, 3, 1, 1, 3, 1, 0],
-      [0, 0, 1, 1, 1, 1, 0, 0],
+      [0, 0, 0, 1, 1, 1, 1, 0, 0, 0],
+      [0, 1, 1, 1, 2, 2, 2, 1, 1, 0],
+      [1, 2, 2, 2, 3, 3, 3, 2, 2, 1],
+      [1, 3, 3, 3, 1, 1, 1, 3, 3, 1],
+      [0, 1, 3, 3, 3, 3, 3, 3, 1, 0],
+      [0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
     ];
 
-    const birdColors = {
-      0: "#87CEEB", // Himmelblau (Hintergrund)
-      1: "green",   // Körper
-      3: "blue",    // Stirn
+    const colors = {
+      0: "#87CEEB", // Himmelblau
+      1: "red", // Körper
+      2: "blue", // Stirn
+      3: "yellow", // Schnabel
     };
 
-    const birdWidth = 20;
-    const birdHeight = 20;
+    const birdWidth = 30;
+    const birdHeight = 30;
 
     let birdX = 50;
     let birdY = canvas.height / 2;
@@ -71,14 +123,33 @@
     let gameRunning = false;
     let gameStarted = false;
 
-    const startOverlay = document.getElementById("start-overlay");
+    const leaderboardList = document.getElementById("leaderboard");
+    const mainMenu = document.getElementById("main-menu");
+
+    // Bestenliste abrufen (lokal für Test)
+    function getLeaderboard() {
+      const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+      leaderboardList.innerHTML = leaderboard
+        .map((entry) => `<li>${entry.name}: ${entry.score}</li>`)
+        .join("");
+    }
+
+    // Bestenliste speichern
+    function saveScore(name, score) {
+      const leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+      leaderboard.push({ name, score });
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard.splice(5); // Nur Top 5
+      localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+      getLeaderboard();
+    }
 
     // Vogel zeichnen
     function drawBird() {
       birdPixels.forEach((row, y) => {
         row.forEach((pixel, x) => {
           if (pixel !== 0) {
-            ctx.fillStyle = birdColors[pixel];
+            ctx.fillStyle = colors[pixel];
             ctx.fillRect(
               birdX + x * (birdWidth / birdPixels[0].length),
               birdY + y * (birdHeight / birdPixels.length),
@@ -99,7 +170,7 @@
     // Hindernisse zeichnen
     function drawPipes() {
       ctx.fillStyle = "green";
-      pipes.forEach(pipe => {
+      pipes.forEach((pipe) => {
         ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
         ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
       });
@@ -107,7 +178,7 @@
 
     // Hindernisse bewegen
     function movePipes() {
-      pipes.forEach(pipe => {
+      pipes.forEach((pipe) => {
         pipe.x -= pipeSpeed;
       });
       if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
@@ -143,7 +214,7 @@
         endGame();
       }
 
-      pipes.forEach(pipe => {
+      pipes.forEach((pipe) => {
         if (
           birdX < pipe.x + pipeWidth &&
           birdX + birdWidth > pipe.x &&
@@ -163,7 +234,7 @@
 
     // Spiel starten
     function startGame() {
-      startOverlay.style.display = "none";
+      mainMenu.classList.remove("active");
       birdY = canvas.height / 2;
       birdVelocity = 0;
       pipes = [];
@@ -175,9 +246,10 @@
     }
 
     function endGame() {
+      const playerName = prompt("Name eingeben:");
+      if (playerName) saveScore(playerName, score);
       gameRunning = false;
-      alert(`Game Over! Dein Score: ${score}`);
-      startGame();
+      mainMenu.classList.add("active");
     }
 
     canvas.addEventListener("click", () => {
@@ -188,8 +260,7 @@
       birdVelocity = jumpForce;
     });
 
-    // Overlay sichtbar machen
-    startOverlay.style.display = "block";
+    getLeaderboard();
   </script>
 </body>
 </html>
