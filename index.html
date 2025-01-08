@@ -148,11 +148,20 @@
     }
 
     function drawHouse(house) {
-      ctx.fillStyle = "#008000"; // Dach
+      ctx.fillStyle = "#964B00"; // Hausbraun
       ctx.fillRect(house.x, canvas.height - 100 - house.height, house.width, house.height);
+
+      // Dach
+      ctx.fillStyle = "#FF0000"; // Rot
+      ctx.beginPath();
+      ctx.moveTo(house.x, canvas.height - 100 - house.height);
+      ctx.lineTo(house.x + house.width / 2, canvas.height - 100 - house.height - 20);
+      ctx.lineTo(house.x + house.width, canvas.height - 100 - house.height);
+      ctx.closePath();
+      ctx.fill();
     }
 
-    // Zeichne Vogel
+    // Vogel zeichnen
     function drawKemal(x, y) {
       // Körper
       ctx.fillStyle = birdColor === "rainbow"
@@ -184,79 +193,54 @@
       }
     }
 
-    // Hauptmenü öffnen
-    function openMainMenu() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-      gameRunning = false;
-    }
+    function gameLoop() {
+      if (!gameRunning) return;
 
-    function openSettings() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.add("active");
-    }
-
-    function closeSettings() {
-      document.getElementById("settings-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-    }
-
-    // Spiel starten
-    function startGame() {
-      const nameInput = document.getElementById("playerName").value.trim();
-      if (nameInput === "") {
-        alert("Bitte gib deinen Spielernamen ein!");
-        return;
-      }
-
-      playerName = nameInput;
-      document.getElementById("main-menu").classList.remove("active");
-      canvas.style.display = "block";
-      gameRunning = true;
-      gameStarted = false;
-      kemalY = canvas.height / 2;
-      gameLoop();
-    }
-
-    // Spiel wiederholen
-    function restartGame() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      kemalY = canvas.height / 2;
-      kemalVelocity = 0;
-      pipes.length = 0;
-      score = 0;
-      gameStarted = false;
-      gameRunning = true;
-      gameLoop();
-    }
-
-    // Hintergrundanimation für das Menü
-    function animateMainMenu() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Wolken bewegen
       clouds.forEach((cloud, index) => {
         drawCloud(cloud);
         cloud.x -= cloudSpeed;
         if (cloud.x + cloud.width < 0) clouds.splice(index, 1);
       });
 
+      // Häuser bewegen
       houses.forEach((house, index) => {
         drawHouse(house);
         house.x -= 1;
         if (house.x + house.width < 0) houses.splice(index, 1);
       });
 
-      if (Math.random() < 0.01) createCloud();
-      if (Math.random() < 0.01) createHouse();
+      // Vogel animieren
+      if (gameStarted) {
+        kemalVelocity += gravity;
+        kemalY += kemalVelocity;
+      }
+      drawKemal(kemalX, kemalY);
 
-      drawKemal(100, canvas.height / 2);
+      // Flügelanimation
+      wingUp = !wingUp;
 
-      requestAnimationFrame(animateMainMenu);
+      requestAnimationFrame(gameLoop);
     }
 
-    animateMainMenu();
+    function startGame() {
+      const nameInput = document.getElementById("playerName").value.trim();
+      if (nameInput === "") {
+        alert("Bitte gib deinen Spielernamen ein!");
+        return;
+      }
+      playerName = nameInput;
+      document.getElementById("main-menu").classList.remove("active");
+      canvas.style.display = "block";
+      gameRunning = true;
+      gameStarted = false;
+      kemalY = canvas.height / 2;
+      pipes.length = 0;
+      score = 0;
+      gameLoop();
+    }
   </script>
 </body>
 </html>
