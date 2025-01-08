@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Bird Clone</title>
+  <title>Adisova Igra - Kemal</title>
   <style>
     body {
       margin: 0;
@@ -126,6 +126,7 @@
     let gameStarted = false;
     let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
     let flapping = false;
+    let collision = false;
 
     // Menüs
     const mainMenu = document.getElementById('main-menu');
@@ -196,7 +197,7 @@
       }
     }
 
-    // Vogel zeichnen
+    // Kemal zeichnen
     function drawBird() {
       ctx.fillStyle = 'green';
       ctx.fillRect(birdX, birdY, 20, 20);
@@ -206,6 +207,16 @@
       ctx.beginPath();
       ctx.arc(birdX + 10, birdY + 5, 3, 0, Math.PI * 2);
       ctx.fill();
+
+      // Augen
+      ctx.fillStyle = collision ? 'red' : 'white';
+      ctx.fillRect(birdX + 5, birdY + 5, 5, 5);
+      ctx.fillStyle = collision ? 'black' : '#000';
+      ctx.fillRect(birdX + 7, birdY + 7, 2, 2);
+
+      // Schnabel
+      ctx.fillStyle = '#FFA500';
+      ctx.fillRect(birdX + 15, birdY + 5, 5, flapping ? 2 : 5);
 
       // Flügel
       ctx.fillStyle = '#FFFFFF';
@@ -236,7 +247,7 @@
       birdVelocity += gravity;
       birdY += birdVelocity;
 
-      // Vogel zeichnen
+      // Kemal zeichnen
       drawBird();
 
       // Kollisionserkennung
@@ -250,6 +261,7 @@
           birdX < pipe.x + pipeWidth &&
           (birdY < pipe.topHeight || birdY + 20 > pipe.topHeight + pipeGap)
         ) {
+          collision = true;
           endGame();
         }
       });
@@ -275,6 +287,7 @@
       pipes.length = 0;
       clouds.length = 0;
       score = 0;
+      collision = false;
       createCloud();
       gameRunning = true;
       gameStarted = false;
