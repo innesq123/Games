@@ -15,7 +15,6 @@
     canvas {
       display: block;
       margin: 0 auto;
-      background: #87CEEB;
     }
 
     #main-menu, #settings-menu, #game-over-menu {
@@ -24,7 +23,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       text-align: center;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
       color: white;
       padding: 20px;
       border-radius: 10px;
@@ -41,13 +40,6 @@
       margin: 10px;
       font-size: 16px;
       cursor: pointer;
-    }
-
-    #settings-menu input {
-      margin-top: 10px;
-      padding: 5px;
-      width: 80%;
-      font-size: 14px;
     }
 
     #color-options {
@@ -77,7 +69,6 @@
     <p>Bitte gib deinen Spielernamen ein:</p>
     <input type="text" id="playerName" placeholder="Spielername">
     <button onclick="startGame()">Start</button>
-    <p id="warning" style="color: red;"></p>
   </div>
 
   <div id="settings-menu">
@@ -90,9 +81,6 @@
       <div class="color-option" style="background-color: black;" data-color="black"></div>
       <div class="color-option" style="background: linear-gradient(45deg, red, yellow, green, blue);" data-color="rainbow"></div>
     </div>
-    <p>Cheat Code eingeben:</p>
-    <input type="text" id="cheat-code" placeholder="Cheat Code hier eingeben">
-    <button onclick="applyCheatCode()">Cheat anwenden</button>
     <button onclick="closeSettings()">Zurück</button>
   </div>
 
@@ -127,20 +115,32 @@
     let score = 0;
     let gameRunning = false;
     let gameStarted = false;
-    let nameAttempts = 0;
     let playerName = "";
     let birdColor = "green";
-    let cheatActive = false;
-
-    // Vogel-Animation
     let wingUp = true;
 
-    // Draw Vogel
+    // Vogel zeichnen
     function drawKemal(x, y) {
+      // Körper
       ctx.fillStyle = birdColor === "rainbow"
         ? createRainbowGradient(x, y, 20, 20)
         : birdColor;
       ctx.fillRect(x, y, 20, 20);
+
+      // Schnabel
+      ctx.fillStyle = "orange";
+      ctx.fillRect(x + 20, y + 7, 7, 6);
+
+      // Auge
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(x + 15, y + 5, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "black";
+      ctx.beginPath();
+      ctx.arc(x + 15, y + 5, 1.5, 0, Math.PI * 2);
+      ctx.fill();
 
       // Flügel
       ctx.fillStyle = "#FFFFFF";
@@ -151,6 +151,7 @@
       }
     }
 
+    // Regenbogen-Farbverlauf erstellen
     function createRainbowGradient(x, y, width, height) {
       const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
       gradient.addColorStop(0, "red");
@@ -161,6 +162,54 @@
       return gradient;
     }
 
+    // Hauptmenü öffnen
+    function openMainMenu() {
+      document.getElementById("game-over-menu").classList.remove("active");
+      document.getElementById("settings-menu").classList.remove("active");
+      document.getElementById("main-menu").classList.add("active");
+    }
+
+    // Einstellungen öffnen
+    function openSettings() {
+      document.getElementById("game-over-menu").classList.remove("active");
+      document.getElementById("main-menu").classList.remove("active");
+      document.getElementById("settings-menu").classList.add("active");
+    }
+
+    // Einstellungen schließen
+    function closeSettings() {
+      document.getElementById("settings-menu").classList.remove("active");
+      document.getElementById("main-menu").classList.add("active");
+    }
+
+    // Spiel starten
+    function startGame() {
+      const nameInput = document.getElementById("playerName").value.trim();
+      if (nameInput === "") {
+        alert("Bitte gib deinen Spielernamen ein!");
+        return;
+      }
+
+      playerName = nameInput;
+      document.getElementById("main-menu").classList.remove("active");
+      canvas.style.display = "block";
+      gameRunning = true;
+      gameLoop();
+    }
+
+    // Spiel wiederholen
+    function restartGame() {
+      document.getElementById("game-over-menu").classList.remove("active");
+      kemalY = canvas.height / 2;
+      kemalVelocity = 0;
+      pipes.length = 0;
+      score = 0;
+      gameStarted = false;
+      gameRunning = true;
+      gameLoop();
+    }
+
+    // Hauptspiel-Loop
     function gameLoop() {
       if (!gameRunning) return;
 
@@ -169,52 +218,10 @@
       // Vogel zeichnen
       drawKemal(kemalX, kemalY);
 
-      if (gameStarted) {
-        kemalVelocity += gravity;
-        kemalY += kemalVelocity;
-
-        // Pipes bewegen und zeichnen
-        pipes.forEach((pipe, index) => {
-          pipe.x -= pipeSpeed;
-          ctx.fillStyle = "#008000"; // Grün
-          ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
-          ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - (pipe.height + pipeGap));
-
-          // Kollisionserkennung
-          if (
-            kemalX + 20 > pipe.x &&
-            kemalX < pipe.x + pipeWidth &&
-            (kemalY < pipe.height || kemalY > pipe.height + pipeGap)
-          ) {
-            endGame();
-          }
-        });
-      }
+      // Flügel-Animation
+      wingUp = !wingUp;
 
       requestAnimationFrame(gameLoop);
-    }
-
-    function openMainMenu() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-    }
-
-    function openSettings() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.add("active");
-    }
-
-    function closeSettings() {
-      document.getElementById("settings-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-    }
-
-    function applyCheatCode() {
-      const cheatCode = document.getElementById("cheat-code").value.trim();
-      if (cheatCode === "GODMODE") {
-        alert("Cheat aktiviert: Unbesiegbar!");
-        cheatActive = true;
-      }
     }
   </script>
 </body>
