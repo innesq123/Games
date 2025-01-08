@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Adisova Igra - Kemal</title>
+  <title>Flappy Bird Clone</title>
   <style>
     body {
       margin: 0;
+      overflow: hidden;
       font-family: Arial, sans-serif;
       background-color: #87CEEB;
-      overflow: hidden;
     }
 
     canvas {
@@ -17,84 +17,12 @@
       margin: 0 auto;
       background: #87CEEB; /* Himmelblauer Hintergrund */
     }
-
-    .menu {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      text-align: center;
-      padding: 20px;
-      border-radius: 10px;
-      display: none;
-      width: 300px;
-    }
-
-    .menu.active {
-      display: block;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background: #28a745;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #218838;
-    }
-
-    input {
-      margin: 10px 0;
-      padding: 8px;
-      width: 80%;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
   </style>
 </head>
 <body>
-  <!-- Hauptmenü -->
-  <div id="main-menu" class="menu active">
-    <h1>Adisova Igra - Kemal</h1>
-    <input id="playerName" type="text" placeholder="Gib deinen Namen ein">
-    <button onclick="startGame()">Start</button>
-    <button onclick="openSettings()">Einstellungen</button>
-  </div>
-
-  <!-- Einstellungen -->
-  <div id="settings-menu" class="menu">
-    <h2>Einstellungen</h2>
-    <p>Vogel-Farbe auswählen:</p>
-    <div>
-      <button onclick="setBirdColor('green')">Grün</button>
-      <button onclick="setBirdColor('blue')">Blau</button>
-      <button onclick="setBirdColor('black')">Schwarz</button>
-      <button onclick="setBirdColor('rainbow')">Regenbogen</button>
-    </div>
-    <button onclick="closeSettings()">Zurück</button>
-  </div>
-
-  <!-- Game Over Menü -->
-  <div id="game-over-menu" class="menu">
-    <h2>Game Over</h2>
-    <p>Score: <span id="final-score"></span></p>
-    <button onclick="restartGame()">Retry</button>
-    <button onclick="openMainMenu()">Main Menu</button>
-  </div>
-
-  <!-- Spielfläche -->
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
   <script>
-    // Canvas und Kontext
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -104,88 +32,100 @@
     let birdVelocity = 0;
     const gravity = 0.5;
     const jumpForce = -10;
-    let gameRunning = false;
-    let gameStarted = false;
-    let pipes = [];
+
+    const pipes = [];
     const pipeWidth = 50;
     const pipeGap = 140;
     const pipeSpeed = 2;
-    let birdColor = 'green';
+
     let score = 0;
+    let gameRunning = true;
 
-    // Menüs
-    const mainMenu = document.getElementById('main-menu');
-    const settingsMenu = document.getElementById('settings-menu');
-    const gameOverMenu = document.getElementById('game-over-menu');
-    const finalScore = document.getElementById('final-score');
+    // Vogel
+    const bird = {
+      width: 20,
+      height: 20,
+      color: '#FFD700',
+      draw: function () {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(birdX, birdY, this.width, this.height);
 
-    // Pipes erstellen
+        // Schnabel
+        ctx.fillStyle = '#FFA500';
+        ctx.fillRect(birdX + this.width - 5, birdY + 5, 5, 5);
+
+        // Auge
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(birdX + 5, birdY + 5, 5, 5);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(birdX + 7, birdY + 7, 2, 2);
+      },
+    };
+
+    // Pipes
     function createPipe() {
       const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
-      pipes.push({ x: canvas.width, topHeight: pipeHeight });
+      pipes.push({
+        x: canvas.width,
+        topHeight: pipeHeight,
+        color: '#228B22',
+      });
     }
 
-    // Pipes zeichnen
     function drawPipes() {
-      ctx.fillStyle = '#228B22';
       pipes.forEach(pipe => {
+        ctx.fillStyle = pipe.color;
         ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
         ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
       });
     }
 
-    // Pipes bewegen
     function movePipes() {
       pipes.forEach(pipe => {
         pipe.x -= pipeSpeed;
       });
+
       if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
         pipes.shift();
         score++;
       }
+
       if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
         createPipe();
       }
     }
 
-    // Vogel zeichnen
-    function drawBird() {
-      ctx.fillStyle = birdColor === 'rainbow'
-        ? `hsl(${Math.random() * 360}, 100%, 50%)`
-        : birdColor;
-      ctx.fillRect(birdX, birdY, 20, 20);
-    }
-
-    // Spiel Logik
+    // Spielmechanik
     function gameLoop() {
       if (!gameRunning) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Pipes
+      // Pipes bewegen und zeichnen
       movePipes();
       drawPipes();
 
-      // Vogel Bewegung
+      // Vogel bewegen
       birdVelocity += gravity;
       birdY += birdVelocity;
 
+      // Vogel zeichnen
+      bird.draw();
+
       // Kollisionserkennung
-      if (birdY + 20 > canvas.height || birdY < 0) {
+      if (birdY + bird.height > canvas.height || birdY < 0) {
         endGame();
       }
 
       pipes.forEach(pipe => {
         if (
-          birdX + 20 > pipe.x &&
           birdX < pipe.x + pipeWidth &&
-          (birdY < pipe.topHeight || birdY + 20 > pipe.topHeight + pipeGap)
+          birdX + bird.width > pipe.x &&
+          (birdY < pipe.topHeight || birdY + bird.height > pipe.topHeight + pipeGap)
         ) {
           endGame();
         }
       });
-
-      drawBird();
 
       // Score anzeigen
       ctx.fillStyle = 'white';
@@ -197,66 +137,29 @@
 
     // Spiel starten
     function startGame() {
-      const playerName = document.getElementById('playerName').value.trim();
-      if (!playerName) {
-        alert('Bitte gib deinen Namen ein!');
-        return;
-      }
-      mainMenu.classList.remove('active');
-      canvas.style.display = 'block';
       birdY = canvas.height / 2;
       birdVelocity = 0;
-      pipes = [];
+      pipes.length = 0;
       score = 0;
       createPipe();
       gameRunning = true;
-      gameStarted = false;
       gameLoop();
-    }
-
-    // Spiel neu starten
-    function restartGame() {
-      gameOverMenu.classList.remove('active');
-      startGame();
     }
 
     // Spiel beenden
     function endGame() {
       gameRunning = false;
-      gameOverMenu.classList.add('active');
-      finalScore.textContent = score;
-    }
-
-    // Hauptmenü
-    function openMainMenu() {
-      gameOverMenu.classList.remove('active');
-      mainMenu.classList.add('active');
-      canvas.style.display = 'none';
-    }
-
-    // Einstellungen
-    function openSettings() {
-      mainMenu.classList.remove('active');
-      settingsMenu.classList.add('active');
-    }
-
-    function closeSettings() {
-      settingsMenu.classList.remove('active');
-      mainMenu.classList.add('active');
-    }
-
-    function setBirdColor(color) {
-      birdColor = color;
+      alert(`Game Over! Dein Score: ${score}`);
+      startGame();
     }
 
     // Steuerung
     canvas.addEventListener('click', () => {
-      if (!gameStarted) {
-        gameStarted = true;
-        return;
-      }
       birdVelocity = jumpForce;
     });
+
+    // Start des Spiels
+    startGame();
   </script>
 </body>
 </html>
