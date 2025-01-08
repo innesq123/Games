@@ -15,7 +15,7 @@
     canvas {
       display: block;
       margin: 0 auto;
-      background-color: #87CEEB;
+      background: #87CEEB; /* Himmelblauer Hintergrund */
     }
 
     .menu {
@@ -29,7 +29,7 @@
       padding: 20px;
       border-radius: 10px;
       display: none;
-      width: 80%;
+      width: 300px;
     }
 
     .menu.active {
@@ -94,6 +94,7 @@
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
   <script>
+    // Canvas und Kontext
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
