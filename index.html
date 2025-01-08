@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Bird Clone</title>
+  <title>Adisova Igra - Kemal</title>
   <style>
     body {
       margin: 0;
@@ -18,47 +18,6 @@
       background: #87CEEB; /* Himmelblauer Hintergrund */
     }
 
-    .menu {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      text-align: center;
-      padding: 20px;
-      border-radius: 10px;
-      display: none;
-      width: 300px;
-    }
-
-    .menu.active {
-      display: block;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background: #28a745;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #218838;
-    }
-
-    input {
-      margin: 10px 0;
-      padding: 8px;
-      width: 80%;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
     #start-overlay {
       position: absolute;
       top: 50%;
@@ -71,168 +30,94 @@
   </style>
 </head>
 <body>
-  <!-- Hauptmenü -->
-  <div id="main-menu" class="menu active">
-    <h1>Adisova Igra - Kemal</h1>
-    <input id="playerName" type="text" placeholder="Gib deinen Namen ein">
-    <button onclick="startGame()">Start</button>
-    <div class="leaderboard">
-      <h3>Bestenliste</h3>
-      <ul id="leaderboard"></ul>
-    </div>
-  </div>
-
-  <!-- Game Over Menü -->
-  <div id="game-over-menu" class="menu">
-    <h2>Game Over</h2>
-    <p>Score: <span id="final-score"></span></p>
-    <button onclick="restartGame()">Retry</button>
-    <button onclick="openMainMenu()">Main Menu</button>
-  </div>
-
-  <!-- Start Overlay -->
   <div id="start-overlay">Tippe zum Starten</div>
-
-  <!-- Spielfläche -->
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
   <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    // Spielvariablen
+    // Vogel-Design (Pixel-Art)
+    const birdSprites = [
+      { x: 0, y: 0 }, // Flügel oben
+      { x: 34, y: 0 }, // Flügel neutral
+      { x: 68, y: 0 }, // Flügel unten
+    ];
+
+    const birdWidth = 34;
+    const birdHeight = 24;
+
+    const sprite = new Image();
+    sprite.src = "https://your-bird-sprite-url.png"; // Ersetze mit deinem Spritesheet
+
     let birdX = 50;
     let birdY = canvas.height / 2;
     let birdVelocity = 0;
     const gravity = 0.4;
     const jumpForce = -8;
 
-    const pipes = [];
-    const pipeWidth = 50;
-    const pipeGap = 160;
-    const pipeSpeed = 1.5;
-
-    const clouds = [];
-    const cloudSpeed = 0.5;
-
-    let score = 0;
+    let frameIndex = 0;
     let gameRunning = false;
     let gameStarted = false;
-    let flapping = false;
-    let collision = false;
+    const startOverlay = document.getElementById("start-overlay");
 
-    const mainMenu = document.getElementById('main-menu');
-    const gameOverMenu = document.getElementById('game-over-menu');
-    const finalScore = document.getElementById('final-score');
-    const startOverlay = document.getElementById('start-overlay');
-
-    // Wolken
-    function createCloud() {
-      clouds.push({
-        x: canvas.width + Math.random() * 200,
-        y: Math.random() * canvas.height / 3,
-        width: 50 + Math.random() * 50,
-        height: 20 + Math.random() * 10,
-      });
-    }
-
-    function drawClouds() {
-      ctx.fillStyle = '#FFFFFF';
-      clouds.forEach(cloud => {
-        ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
-      });
-    }
-
-    function moveClouds() {
-      clouds.forEach(cloud => {
-        cloud.x -= cloudSpeed;
-      });
-      if (clouds.length === 0 || clouds[clouds.length - 1].x < canvas.width - 100) {
-        createCloud();
-      }
-    }
-
-    // Vogel
+    // Vogel zeichnen
     function drawBird() {
-      ctx.fillStyle = 'green';
-      ctx.fillRect(birdX, birdY, 20, 20);
-
-      ctx.fillStyle = 'blue';
-      ctx.beginPath();
-      ctx.arc(birdX + 10, birdY + 5, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = collision ? 'red' : 'white';
-      ctx.fillRect(birdX + 5, birdY + 5, 5, 5);
-      ctx.fillStyle = collision ? 'black' : '#000';
-      ctx.fillRect(birdX + 7, birdY + 7, 2, 2);
-
-      ctx.fillStyle = '#FFA500';
-      ctx.fillRect(birdX + 15, birdY + 5, 5, flapping ? 2 : 5);
-
-      ctx.fillStyle = '#FFFFFF';
-      if (flapping) {
-        ctx.fillRect(birdX - 5, birdY - 10, 10, 5);
-      } else {
-        ctx.fillRect(birdX - 5, birdY + 20, 10, 5);
-      }
+      const frame = birdSprites[frameIndex];
+      ctx.drawImage(
+        sprite,
+        frame.x,
+        frame.y,
+        birdWidth,
+        birdHeight,
+        birdX,
+        birdY,
+        birdWidth,
+        birdHeight
+      );
     }
 
-    // Spiel Logik
+    // Spiel-Logik
     function gameLoop() {
-      if (!gameRunning) return;
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Wolken
-      moveClouds();
-      drawClouds();
-
-      // Vogel
+      // Vogel-Schwerkraft
       if (gameStarted) {
         birdVelocity += gravity;
         birdY += birdVelocity;
       }
 
+      // Vogel zeichnen
       drawBird();
+
+      // Animation frame ändern
+      if (gameRunning) {
+        frameIndex = (frameIndex + 1) % birdSprites.length;
+      }
 
       requestAnimationFrame(gameLoop);
     }
 
+    // Spiel starten
     function startGame() {
-      const playerName = document.getElementById('playerName').value.trim();
-      if (!playerName) {
-        alert('Bitte gib deinen Namen ein!');
-        return;
-      }
-      mainMenu.classList.remove('active');
-      startOverlay.style.display = 'block';
-      birdY = canvas.height / 2;
-      gameRunning = true;
-      canvas.style.display = 'block';
-      gameLoop();
+      gameStarted = true;
+      startOverlay.style.display = "none";
     }
 
-    canvas.addEventListener('click', () => {
+    canvas.addEventListener("click", () => {
       if (!gameStarted) {
-        gameStarted = true;
-        startOverlay.style.display = 'none';
-        return;
+        startGame();
       }
       birdVelocity = jumpForce;
-      flapping = !flapping;
     });
 
-    function restartGame() {
-      gameOverMenu.classList.remove('active');
-      startGame();
-    }
+    // Starte die Schleife
+    sprite.onload = () => {
+      gameLoop();
+    };
 
-    function openMainMenu() {
-      gameOverMenu.classList.remove('active');
-      mainMenu.classList.add('active');
-      canvas.style.display = 'none';
-    }
+    // Overlay sichtbar machen
+    startOverlay.style.display = "block";
   </script>
 </body>
 </html>
