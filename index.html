@@ -58,6 +58,25 @@
       border-radius: 5px;
       border: 1px solid #ccc;
     }
+
+    .leaderboard {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .leaderboard h3 {
+      margin: 0;
+    }
+
+    .leaderboard ul {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+    }
+
+    .leaderboard li {
+      margin: 5px 0;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +85,10 @@
     <h1>Adisova Igra - Kemal</h1>
     <input id="playerName" type="text" placeholder="Gib deinen Namen ein">
     <button onclick="startGame()">Start</button>
+    <div class="leaderboard">
+      <h3>Bestenliste</h3>
+      <ul id="leaderboard"></ul>
+    </div>
   </div>
 
   <!-- Game Over Menü -->
@@ -87,20 +110,64 @@
     let birdX = 50;
     let birdY = canvas.height / 2;
     let birdVelocity = 0;
-    const gravity = 0.5;
-    const jumpForce = -10;
+    const gravity = 0.4;
+    const jumpForce = -8;
+
+    const pipes = [];
+    const pipeWidth = 50;
+    const pipeGap = 160;
+    const pipeSpeed = 1.5;
+
+    const clouds = [];
+    const cloudSpeed = 0.5;
+
+    let score = 0;
     let gameRunning = false;
     let gameStarted = false;
-    let pipes = [];
-    const pipeWidth = 50;
-    const pipeGap = 140;
-    const pipeSpeed = 2;
-    let score = 0;
+    let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+    let flapping = false;
 
     // Menüs
     const mainMenu = document.getElementById('main-menu');
     const gameOverMenu = document.getElementById('game-over-menu');
     const finalScore = document.getElementById('final-score');
+    const leaderboardList = document.getElementById('leaderboard');
+
+    // Bestenliste aktualisieren
+    function updateLeaderboard() {
+      leaderboard.sort((a, b) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 5);
+      leaderboardList.innerHTML = leaderboard
+        .map(player => `<li>${player.name}: ${player.score}</li>`)
+        .join('');
+      localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+    }
+
+    // Wolken erstellen
+    function createCloud() {
+      clouds.push({
+        x: canvas.width + Math.random() * 200,
+        y: Math.random() * (canvas.height / 3),
+        width: 50 + Math.random() * 50,
+        height: 20 + Math.random() * 10,
+      });
+    }
+
+    function drawClouds() {
+      ctx.fillStyle = '#FFFFFF';
+      clouds.forEach(cloud => {
+        ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+      });
+    }
+
+    function moveClouds() {
+      clouds.forEach(cloud => {
+        cloud.x -= cloudSpeed;
+      });
+      if (clouds.length === 0 || clouds[clouds.length - 1].x < canvas.width - 100) {
+        createCloud();
+      }
+    }
 
     // Pipes erstellen
     function createPipe() {
@@ -108,7 +175,6 @@
       pipes.push({ x: canvas.width, topHeight: pipeHeight });
     }
 
-    // Pipes zeichnen
     function drawPipes() {
       ctx.fillStyle = '#228B22';
       pipes.forEach(pipe => {
@@ -117,7 +183,6 @@
       });
     }
 
-    // Pipes bewegen
     function movePipes() {
       pipes.forEach(pipe => {
         pipe.x -= pipeSpeed;
@@ -133,18 +198,22 @@
 
     // Vogel zeichnen
     function drawBird() {
-      ctx.fillStyle = '#FFD700';
+      ctx.fillStyle = 'green';
       ctx.fillRect(birdX, birdY, 20, 20);
 
-      // Schnabel
-      ctx.fillStyle = '#FFA500';
-      ctx.fillRect(birdX + 15, birdY + 5, 5, 5);
+      // Blauer Punkt
+      ctx.fillStyle = 'blue';
+      ctx.beginPath();
+      ctx.arc(birdX + 10, birdY + 5, 3, 0, Math.PI * 2);
+      ctx.fill();
 
-      // Auge
+      // Flügel
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(birdX + 5, birdY + 5, 5, 5);
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(birdX + 7, birdY + 7, 2, 2);
+      if (flapping) {
+        ctx.fillRect(birdX - 5, birdY - 10, 10, 5); // Flügel oben
+      } else {
+        ctx.fillRect(birdX - 5, birdY + 20, 10, 5); // Flügel unten
+      }
     }
 
     // Spiel Logik
@@ -153,15 +222,19 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Wolken
+      moveClouds();
+      drawClouds();
+
       // Pipes
-      movePipes();
-      drawPipes();
+      if (gameStarted) {
+        movePipes();
+        drawPipes();
+      }
 
       // Vogel Bewegung
-      if (gameStarted) {
-        birdVelocity += gravity;
-        birdY += birdVelocity;
-      }
+      birdVelocity += gravity;
+      birdY += birdVelocity;
 
       // Vogel zeichnen
       drawBird();
@@ -199,9 +272,10 @@
       mainMenu.classList.remove('active');
       birdY = canvas.height / 2;
       birdVelocity = 0;
-      pipes = [];
+      pipes.length = 0;
+      clouds.length = 0;
       score = 0;
-      createPipe();
+      createCloud();
       gameRunning = true;
       gameStarted = false;
       canvas.style.display = 'block';
@@ -219,6 +293,9 @@
       gameRunning = false;
       gameOverMenu.classList.add('active');
       finalScore.textContent = score;
+      const playerName = document.getElementById('playerName').value.trim();
+      leaderboard.push({ name: playerName, score });
+      updateLeaderboard();
     }
 
     // Hauptmenü
@@ -235,7 +312,11 @@
         return;
       }
       birdVelocity = jumpForce;
+      flapping = !flapping;
     });
+
+    // Bestenliste initialisieren
+    updateLeaderboard();
   </script>
 </body>
 </html>
