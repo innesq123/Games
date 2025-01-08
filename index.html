@@ -64,7 +64,7 @@
             <p class="rank silver">2. ---</p>
             <p class="rank bronze">3. ---</p>
         </div>
-        <button onclick="backToMenu()">Zurück zum Menü</button>
+        <button onclick="backToMenu()">Zurück</button>
     </div>
 
     <!-- Spielbereich -->
@@ -162,55 +162,6 @@
             }
         }
 
-        function updatePacMan() {
-            pacMan.x += pacMan.direction.x * pacMan.speed;
-            pacMan.y += pacMan.direction.y * pacMan.speed;
-
-            if (pacMan.x < 0) pacMan.x = canvas.width;
-            if (pacMan.x > canvas.width) pacMan.x = 0;
-            if (pacMan.y < 0) pacMan.y = canvas.height;
-            if (pacMan.y > canvas.height) pacMan.y = 0;
-
-            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
-                pacMan.poweredUpTime--;
-            } else {
-                pacMan.poweredUp = false;
-                pacMan.speed = 2;
-            }
-        }
-
-        function drawPacMan() {
-            ctx.fillStyle = pacMan.poweredUp ? 'yellow' : 'gold';
-            ctx.beginPath();
-            ctx.arc(pacMan.x, pacMan.y, pacMan.size, 0.2 * Math.PI, 1.8 * Math.PI);
-            ctx.lineTo(pacMan.x, pacMan.y);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        function updateGhosts() {
-            ghosts.forEach(ghost => {
-                ghost.x += ghost.direction.x * ghost.speed;
-                ghost.y += ghost.direction.y * ghost.speed;
-
-                if (!ghost.canWalkThroughWalls) {
-                    if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
-                        ghost.direction.x = -ghost.direction.x;
-                        ghost.direction.y = -ghost.direction.y;
-                    }
-                }
-            });
-        }
-
-        function drawGhosts() {
-            ghosts.forEach(ghost => {
-                ctx.fillStyle = 'red';
-                ctx.beginPath();
-                ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
-                ctx.fill();
-            });
-        }
-
         function drawDots() {
             dots.forEach(dot => {
                 if (!dot.eaten) {
@@ -222,29 +173,10 @@
             });
         }
 
-        function checkCollisions() {
-            dots.forEach(dot => {
-                if (!dot.eaten && Math.hypot(dot.x - pacMan.x, dot.y - pacMan.y) < pacMan.size) {
-                    dot.eaten = true;
-                    score += 100;
-                    if (score % 1000 === 0) {
-                        pacMan.poweredUp = true;
-                        pacMan.poweredUpTime = 180; // 3 Sekunden
-                        pacMan.speed = 4;
-                    }
-                }
-            });
-
-            ghosts.forEach(ghost => {
-                if (Math.hypot(ghost.x - pacMan.x, ghost.y - pacMan.y) < pacMan.size + 20) {
-                    gameState = 'game-over';
-                }
-            });
-        }
-
         function endGame() {
             cancelAnimationFrame(animationId);
-            updateHighScores(playerNameInput.value.trim(), score);
+            const playerName = playerNameInput.value.trim();
+            updateHighScores(playerName, score);
             showGameOverScreen();
         }
 
@@ -252,12 +184,6 @@
             highScores.push({ name, score });
             highScores.sort((a, b) => b.score - a.score);
             highScores = highScores.slice(0, 3);
-        }
-
-        function showGameOverScreen() {
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('gameOver').style.display = 'block';
-            finalScoreDisplay.textContent = `Dein Punktestand: ${score}`;
         }
 
         function showLeaderboard() {
@@ -281,8 +207,4 @@
             if (e.key === 'ArrowUp') pacMan.direction = { x: 0, y: -1 };
             if (e.key === 'ArrowDown') pacMan.direction = { x: 0, y: 1 };
             if (e.key === 'ArrowLeft') pacMan.direction = { x: -1, y: 0 };
-            if (e.key === 'ArrowRight') pacMan.direction = { x: 1, y: 0 };
-        });
-    </script>
-</body>
-</html>
+            if (e.key === 'ArrowRight') pacMan.direction = { x:
