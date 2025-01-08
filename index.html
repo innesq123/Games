@@ -92,7 +92,7 @@
     <button onclick="openSettings()">Settings</button>
   </div>
 
-  <canvas id="gameCanvas" style="display: none;"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -112,6 +112,10 @@
     const pipeGap = 150;
     const pipeSpeed = 2;
 
+    const clouds = [];
+    const houses = [];
+    const cloudSpeed = 0.5;
+
     let score = 0;
     let gameRunning = false;
     let gameStarted = false;
@@ -119,7 +123,36 @@
     let birdColor = "green";
     let wingUp = true;
 
-    // Vogel zeichnen
+    // Generiere Hintergrundwolken
+    function createCloud() {
+      clouds.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height / 3,
+        width: 60 + Math.random() * 40,
+        height: 20 + Math.random() * 10,
+      });
+    }
+
+    function drawCloud(cloud) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+    }
+
+    // Generiere Häuser
+    function createHouse() {
+      houses.push({
+        x: Math.random() * canvas.width,
+        width: 50 + Math.random() * 20,
+        height: 50 + Math.random() * 30,
+      });
+    }
+
+    function drawHouse(house) {
+      ctx.fillStyle = "#008000"; // Dach
+      ctx.fillRect(house.x, canvas.height - 100 - house.height, house.width, house.height);
+    }
+
+    // Zeichne Vogel
     function drawKemal(x, y) {
       // Körper
       ctx.fillStyle = birdColor === "rainbow"
@@ -151,32 +184,20 @@
       }
     }
 
-    // Regenbogen-Farbverlauf erstellen
-    function createRainbowGradient(x, y, width, height) {
-      const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-      gradient.addColorStop(0, "red");
-      gradient.addColorStop(0.25, "yellow");
-      gradient.addColorStop(0.5, "green");
-      gradient.addColorStop(0.75, "blue");
-      gradient.addColorStop(1, "purple");
-      return gradient;
-    }
-
     // Hauptmenü öffnen
     function openMainMenu() {
       document.getElementById("game-over-menu").classList.remove("active");
       document.getElementById("settings-menu").classList.remove("active");
       document.getElementById("main-menu").classList.add("active");
+      gameRunning = false;
     }
 
-    // Einstellungen öffnen
     function openSettings() {
       document.getElementById("game-over-menu").classList.remove("active");
       document.getElementById("main-menu").classList.remove("active");
       document.getElementById("settings-menu").classList.add("active");
     }
 
-    // Einstellungen schließen
     function closeSettings() {
       document.getElementById("settings-menu").classList.remove("active");
       document.getElementById("main-menu").classList.add("active");
@@ -194,6 +215,8 @@
       document.getElementById("main-menu").classList.remove("active");
       canvas.style.display = "block";
       gameRunning = true;
+      gameStarted = false;
+      kemalY = canvas.height / 2;
       gameLoop();
     }
 
@@ -209,16 +232,36 @@
       gameLoop();
     }
 
-    // Hauptspiel-Loop
+    // Spiel-Loop
     function gameLoop() {
       if (!gameRunning) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Vogel zeichnen
+      // Hintergrund
+      clouds.forEach((cloud, index) => {
+        drawCloud(cloud);
+        cloud.x -= cloudSpeed;
+        if (cloud.x + cloud.width < 0) clouds.splice(index, 1);
+      });
+
+      houses.forEach((house, index) => {
+        drawHouse(house);
+        house.x -= 1;
+        if (house.x + house.width < 0) houses.splice(index, 1);
+      });
+
+      if (Math.random() < 0.01) createCloud();
+      if (Math.random() < 0.01) createHouse();
+
+      // Vogel
       drawKemal(kemalX, kemalY);
 
-      // Flügel-Animation
+      if (gameStarted) {
+        kemalVelocity += gravity;
+        kemalY += kemalVelocity;
+      }
+
       wingUp = !wingUp;
 
       requestAnimationFrame(gameLoop);
