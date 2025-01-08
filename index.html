@@ -93,15 +93,12 @@
     <h1>Einstellungen</h1>
     <p>Wähle eine Farbe für deinen Vogel:</p>
     <div id="color-options">
-      <div class="color-option" style="background-color: purple;" data-color="purple"></div>
-      <div class="color-option" style="background-color: green;" data-color="green"></div>
-      <div class="color-option" style="background-color: blue;" data-color="blue"></div>
-      <div class="color-option" style="background-color: black;" data-color="black"></div>
-      <div class="color-option" style="background: linear-gradient(45deg, red, yellow, green, blue);" data-color="rainbow"></div>
+      <div class="color-option" style="background-color: purple;" data-color="purple" onclick="setBirdColor('purple')"></div>
+      <div class="color-option" style="background-color: green;" data-color="green" onclick="setBirdColor('green')"></div>
+      <div class="color-option" style="background-color: blue;" data-color="blue" onclick="setBirdColor('blue')"></div>
+      <div class="color-option" style="background-color: black;" data-color="black" onclick="setBirdColor('black')"></div>
+      <div class="color-option" style="background: linear-gradient(45deg, red, yellow, green, blue);" data-color="rainbow" onclick="setBirdColor('rainbow')"></div>
     </div>
-    <p>Cheat Code eingeben:</p>
-    <input type="text" id="cheat-code" placeholder="Cheat Code">
-    <button onclick="applyCheatCode()">Cheat anwenden</button>
     <button onclick="closeSettings()">Zurück</button>
   </div>
 
@@ -122,20 +119,19 @@
     canvas.width = 400;
     canvas.height = 600;
 
-    // Vogel und Spielmechanik
+    // Spielvariablen
     let kemalX = 50;
     let kemalY = canvas.height / 2;
     let kemalVelocity = 0;
-    const gravity = 0.5;
-    const jumpStrength = -10;
+    const gravity = 0.4; // Leichter angepasst für sanftere Bewegung
+    const jumpStrength = -8;
 
     const pipes = [];
     const pipeWidth = 50;
-    const pipeGap = 150;
+    const pipeGap = 140; // Etwas größere Lücke für leichteres Spiel
     const pipeSpeed = 2;
 
     const clouds = [];
-    const houses = [];
     const cloudSpeed = 0.5;
 
     let score = 0;
@@ -145,20 +141,23 @@
     let birdColor = "green";
     let wingUp = true;
 
-    // Funktionen
-    function createPipe() {
-      const height = Math.random() * (canvas.height - pipeGap - 100) + 50;
-      pipes.push({ x: canvas.width, height });
+    // Hintergrundwolken
+    function createCloud() {
+      clouds.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height / 3,
+        width: 60 + Math.random() * 40,
+        height: 20 + Math.random() * 10,
+      });
     }
 
-    function drawPipe(pipe) {
-      ctx.fillStyle = "#008000"; // Grün
-      ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
-      ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - pipe.height - pipeGap);
+    function drawCloud(cloud) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
     }
 
+    // Vogel
     function drawKemal() {
-      // Körper
       ctx.fillStyle = birdColor === "rainbow"
         ? createRainbowGradient(kemalX, kemalY, 20, 20)
         : birdColor;
@@ -182,38 +181,27 @@
       // Flügel
       ctx.fillStyle = "#FFFFFF";
       if (wingUp) {
-        ctx.fillRect(kemalX + 5, kemalY - 10, 10, 5); // Flügel oben
+        ctx.fillRect(kemalX + 5, kemalY - 10, 10, 5);
       } else {
-        ctx.fillRect(kemalX + 5, kemalY + 20, 10, 5); // Flügel unten
+        ctx.fillRect(kemalX + 5, kemalY + 20, 10, 5);
       }
     }
 
+    // Flappy Bird Mechanik
     function gameLoop() {
       if (!gameRunning) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Pipes
-      pipes.forEach((pipe, index) => {
-        pipe.x -= pipeSpeed;
-        if (pipe.x + pipeWidth < 0) {
-          pipes.splice(index, 1);
-          score++;
-        }
-        drawPipe(pipe);
-
-        if (
-          kemalX < pipe.x + pipeWidth &&
-          kemalX + 20 > pipe.x &&
-          (kemalY < pipe.height || kemalY + 20 > pipe.height + pipeGap)
-        ) {
-          endGame();
-        }
+      // Wolken
+      clouds.forEach((cloud, index) => {
+        drawCloud(cloud);
+        cloud.x -= cloudSpeed;
+        if (cloud.x + cloud.width < 0) clouds.splice(index, 1);
       });
 
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        createPipe();
-      }
+      // Neue Wolken erstellen
+      if (Math.random() < 0.01) createCloud();
 
       // Vogelbewegung
       kemalVelocity += gravity;
@@ -227,12 +215,13 @@
 
       wingUp = !wingUp;
 
-      // Score anzeigen
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "20px Arial";
-      ctx.fillText(`Score: ${score}`, 10, 30);
-
       requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      document.getElementById("game-over-menu").classList.add("active");
+      document.getElementById("final-score").textContent = score;
     }
 
     function startGame() {
@@ -243,49 +232,25 @@
       }
       playerName = nameInput;
       document.getElementById("main-menu").classList.remove("active");
-      gameRunning = true;
-      gameStarted = false;
-      kemalY = canvas.height / 2;
-      pipes.length = 0;
-      score = 0;
       canvas.style.display = "block";
-      gameLoop();
-    }
-
-    function restartGame() {
-      document.getElementById("game-over-menu").classList.remove("active");
       kemalY = canvas.height / 2;
-      kemalVelocity = 0;
-      pipes.length = 0;
-      score = 0;
       gameStarted = false;
-      gameRunning = true;
+      score = 0;
       gameLoop();
     }
 
-    function endGame() {
-      gameRunning = false;
-      document.getElementById("game-over-menu").classList.add("active");
-      document.getElementById("final-score").textContent = score;
-    }
-
-    function applyCheatCode() {
-      const cheatCode = document.getElementById("cheat-code").value.trim();
-      if (cheatCode === "GODMODE") {
-        alert("Unbesiegbarkeit aktiviert!");
+    canvas.addEventListener("click", () => {
+      if (!gameStarted) {
+        gameStarted = true;
+        kemalVelocity = jumpStrength;
+        return;
       }
-    }
+      kemalVelocity = jumpStrength;
+    });
 
-    function openMainMenu() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-      gameRunning = false;
-    }
-
-    function openSettings() {
-      document.getElementById("main-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.add("active");
+    function setBirdColor(color) {
+      birdColor = color;
+      alert(`Vogel-Farbe geändert zu ${color}`);
     }
 
     function closeSettings() {
@@ -293,15 +258,10 @@
       document.getElementById("main-menu").classList.add("active");
     }
 
-    canvas.addEventListener("click", () => {
-      if (!gameStarted) {
-        gameStarted = true;
-        gameRunning = true;
-        kemalVelocity = jumpStrength;
-        return;
-      }
-      kemalVelocity = jumpStrength;
-    });
+    function openSettings() {
+      document.getElementById("main-menu").classList.remove("active");
+      document.getElementById("settings-menu").classList.add("active");
+    }
   </script>
 </body>
 </html>
