@@ -3,50 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Innes Retro Spiele</title>
+    <title>DMG Revolver</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #f1f1f1;
+            background-color: black;
+            color: white;
             text-align: center;
+            margin: 0;
+            padding: 0;
         }
-        .menu {
+        canvas {
+            display: block;
             margin: 20px auto;
+            background-color: #222;
+            border: 3px solid white;
+        }
+        .menu, .game-over, .game {
+            display: none;
         }
         .menu button {
             margin: 10px;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
         }
-        canvas {
-            border: 2px solid #f1f1f1;
+        .leaderboard {
+            text-align: center;
             margin: 20px auto;
+            width: 300px;
+            background: #333;
+            border-radius: 10px;
+            padding: 10px;
         }
-        #game-area {
-            display: none;
+        .leaderboard .rank {
+            font-size: 16px;
+            margin: 5px 0;
         }
+        .gold { color: gold; }
+        .silver { color: silver; }
+        .bronze { color: #cd7f32; }
     </style>
 </head>
 <body>
-    <h1>Innes Retro Spiele</h1>
-    <div class="menu" id="menu">
+    <h1>DMG Revolver</h1>
+
+    <!-- Main Menu -->
+    <div class="menu" id="mainMenu">
         <h2>Hauptmenü</h2>
-        <button onclick="startGame('snake')">Snake</button>
-        <button onclick="startGame('tetris')">Tetris</button>
-        <button onclick="startGame('pacman')">Pac-Man</button>
-        <button onclick="startGame('game4')">Spiel 4</button>
-        <button onclick="startGame('game5')">Spiel 5</button>
-        <button onclick="startGame('game6')">Spiel 6</button>
-        <button onclick="startGame('game7')">Spiel 7</button>
-        <button onclick="startGame('game8')">Spiel 8</button>
-        <button onclick="startGame('game9')">Spiel 9</button>
-        <button onclick="startGame('game10')">Spiel 10</button>
+        <button onclick="startGame()">Spiel starten</button>
+        <button onclick="showLeaderboard()">Bestenliste</button>
     </div>
-    <div id="game-area">
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
-        <br>
+
+    <!-- Leaderboard -->
+    <div class="leaderboard" id="leaderboard">
+        <h2>Top-Spieler</h2>
+        <div id="leaderboardList">
+            <p class="rank gold">1. ---</p>
+            <p class="rank silver">2. ---</p>
+            <p class="rank bronze">3. ---</p>
+        </div>
+        <button onclick="backToMenu()">Zurück</button>
+    </div>
+
+    <!-- Game Canvas -->
+    <div class="game" id="gameArea">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <p id="score">Punkte: 0</p>
+    </div>
+
+    <!-- Game Over -->
+    <div class="game-over" id="gameOver">
+        <h2>Spiel vorbei!</h2>
+        <p id="finalScore">Dein Punktestand: 0</p>
         <button onclick="backToMenu()">Zurück zum Menü</button>
     </div>
 
@@ -54,77 +83,130 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        function startGame(game) {
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('game-area').style.display = 'block';
-            if (game === 'snake') startSnake();
-            else if (game === 'tetris') startTetris();
-            else if (game === 'pacman') startPacman();
-            else alert('Spiel ' + game + ' ist noch nicht implementiert.');
+        let gameState, score, pacMan, powerUp, ghosts, highScores;
+        let animationId;
+
+        function resetGame() {
+            gameState = 'playing';
+            score = 0;
+            pacMan = { x: 300, y: 300, size: 20, speed: 2, direction: 'right', poweredUp: false, poweredUpTime: 0 };
+            powerUp = null;
+            ghosts = [
+                { x: 100, y: 100, speed: 1, direction: 'down', canWalkThroughWalls: true },
+                { x: 500, y: 500, speed: 1, direction: 'up', canWalkThroughWalls: false }
+            ];
+        }
+
+        function startGame() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            resetGame();
+            updateGame();
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update Pac-Man
+            updatePacMan();
+            drawPacMan();
+
+            // Update and draw ghosts
+            ghosts.forEach(updateGhost);
+            ghosts.forEach(drawGhost);
+
+            // Check collisions and update score
+            checkCollisions();
+
+            // Power-up management
+            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
+                pacMan.poweredUpTime -= 1;
+            } else {
+                pacMan.poweredUp = false;
+            }
+
+            document.getElementById('score').textContent = `Punkte: ${score}`;
+
+            if (gameState === 'playing') {
+                animationId = requestAnimationFrame(updateGame);
+            } else {
+                endGame();
+            }
+        }
+
+        function updatePacMan() {
+            if (pacMan.direction === 'right') pacMan.x += pacMan.speed;
+            if (pacMan.direction === 'left') pacMan.x -= pacMan.speed;
+            if (pacMan.direction === 'up') pacMan.y -= pacMan.speed;
+            if (pacMan.direction === 'down') pacMan.y += pacMan.speed;
+
+            if (pacMan.x < 0) pacMan.x = canvas.width;
+            if (pacMan.x > canvas.width) pacMan.x = 0;
+            if (pacMan.y < 0) pacMan.y = canvas.height;
+            if (pacMan.y > canvas.height) pacMan.y = 0;
+        }
+
+        function drawPacMan() {
+            ctx.fillStyle = pacMan.poweredUp ? 'yellow' : 'gold';
+            ctx.beginPath();
+            ctx.arc(pacMan.x, pacMan.y, pacMan.size, 0.2 * Math.PI, 1.8 * Math.PI);
+            ctx.lineTo(pacMan.x, pacMan.y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function updateGhost(ghost) {
+            if (ghost.direction === 'right') ghost.x += ghost.speed;
+            if (ghost.direction === 'left') ghost.x -= ghost.speed;
+            if (ghost.direction === 'up') ghost.y -= ghost.speed;
+            if (ghost.direction === 'down') ghost.y += ghost.speed;
+
+            if (!ghost.canWalkThroughWalls) {
+                if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
+                    ghost.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                }
+            }
+        }
+
+        function drawGhost(ghost) {
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+        }
+
+        function checkCollisions() {
+            ghosts.forEach(ghost => {
+                if (Math.hypot(ghost.x - pacMan.x, ghost.y - pacMan.y) < pacMan.size + 20) {
+                    gameState = 'game-over';
+                }
+            });
+
+            // Scoring logic and power-up activation
+            if (score >= 1000 && !pacMan.poweredUp) {
+                pacMan.poweredUp = true;
+                pacMan.poweredUpTime = 180; // Power-up lasts for 3 seconds (at 60 FPS)
+            }
+        }
+
+        function endGame() {
+            cancelAnimationFrame(animationId);
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'block';
+            document.getElementById('finalScore').textContent = `Dein Punktestand: ${score}`;
         }
 
         function backToMenu() {
-            document.getElementById('game-area').style.display = 'none';
-            document.getElementById('menu').style.display = 'block';
-            cancelAnimationFrame(animationId); // Stop the current game loop
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
         }
 
-        let animationId;
-
-        // Snake Game
-        let snake = [{x: 200, y: 200}];
-        let direction = {x: 0, y: 0};
-        let food = {x: 100, y: 100};
-        function startSnake() {
-            direction = {x: 0, y: 0};
-            snake = [{x: 200, y: 200}];
-            food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
-            gameLoopSnake();
-        }
-
-        function gameLoopSnake() {
-            animationId = requestAnimationFrame(gameLoopSnake);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw food
-            ctx.fillStyle = 'red';
-            ctx.fillRect(food.x, food.y, 20, 20);
-
-            // Move snake
-            const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
-            snake.unshift(head);
-            if (head.x === food.x && head.y === food.y) {
-                food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
-            } else {
-                snake.pop();
-            }
-
-            // Check collision
-            if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400 || snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
-                alert('Game Over!');
-                backToMenu();
-            }
-
-            // Draw snake
-            ctx.fillStyle = 'lime';
-            snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' && direction.y === 0) direction = {x: 0, y: -20};
-            if (e.key === 'ArrowDown' && direction.y === 0) direction = {x: 0, y: 20};
-            if (e.key === 'ArrowLeft' && direction.x === 0) direction = {x: -20, y: 0};
-            if (e.key === 'ArrowRight' && direction.x === 0) direction = {x: 20, y: 0};
-        });
-
-        // Placeholder for Tetris
-        function startTetris() {
-            alert('Tetris ist noch in Arbeit!');
-        }
-
-        // Placeholder for Pac-Man
-        function startPacman() {
-            alert('Pac-Man ist noch in Arbeit!');
+        function showLeaderboard() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'block';
         }
     </script>
 </body>
