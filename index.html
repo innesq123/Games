@@ -9,7 +9,7 @@
       margin: 0;
       overflow: hidden;
       font-family: Arial, sans-serif;
-      background-color: #87CEEB; /* Himmelblau */
+      background-color: #87CEEB;
     }
 
     canvas {
@@ -123,73 +123,45 @@
     let birdColor = "green";
     let wingUp = true;
 
-    // Generiere Hintergrundwolken
-    function createCloud() {
-      clouds.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height / 3,
-        width: 60 + Math.random() * 40,
-        height: 20 + Math.random() * 10,
-      });
+    function createPipe() {
+      const height = Math.random() * (canvas.height - pipeGap - 100) + 50;
+      pipes.push({ x: canvas.width, height });
     }
 
-    function drawCloud(cloud) {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+    function drawPipe(pipe) {
+      ctx.fillStyle = "#008000"; // Grün
+      ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
+      ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - pipe.height - pipeGap);
     }
 
-    // Generiere Häuser
-    function createHouse() {
-      houses.push({
-        x: Math.random() * canvas.width,
-        width: 50 + Math.random() * 20,
-        height: 50 + Math.random() * 30,
-      });
-    }
-
-    function drawHouse(house) {
-      ctx.fillStyle = "#964B00"; // Hausbraun
-      ctx.fillRect(house.x, canvas.height - 100 - house.height, house.width, house.height);
-
-      // Dach
-      ctx.fillStyle = "#FF0000"; // Rot
-      ctx.beginPath();
-      ctx.moveTo(house.x, canvas.height - 100 - house.height);
-      ctx.lineTo(house.x + house.width / 2, canvas.height - 100 - house.height - 20);
-      ctx.lineTo(house.x + house.width, canvas.height - 100 - house.height);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // Vogel zeichnen
-    function drawKemal(x, y) {
+    function drawKemal() {
       // Körper
       ctx.fillStyle = birdColor === "rainbow"
-        ? createRainbowGradient(x, y, 20, 20)
+        ? createRainbowGradient(kemalX, kemalY, 20, 20)
         : birdColor;
-      ctx.fillRect(x, y, 20, 20);
+      ctx.fillRect(kemalX, kemalY, 20, 20);
 
       // Schnabel
       ctx.fillStyle = "orange";
-      ctx.fillRect(x + 20, y + 7, 7, 6);
+      ctx.fillRect(kemalX + 20, kemalY + 7, 7, 6);
 
       // Auge
       ctx.fillStyle = "white";
       ctx.beginPath();
-      ctx.arc(x + 15, y + 5, 3, 0, Math.PI * 2);
+      ctx.arc(kemalX + 15, kemalY + 5, 3, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.fillStyle = "black";
       ctx.beginPath();
-      ctx.arc(x + 15, y + 5, 1.5, 0, Math.PI * 2);
+      ctx.arc(kemalX + 15, kemalY + 5, 1.5, 0, Math.PI * 2);
       ctx.fill();
 
       // Flügel
       ctx.fillStyle = "#FFFFFF";
       if (wingUp) {
-        ctx.fillRect(x + 5, y - 10, 10, 5); // Flügel oben
+        ctx.fillRect(kemalX + 5, kemalY - 10, 10, 5); // Flügel oben
       } else {
-        ctx.fillRect(x + 5, y + 20, 10, 5); // Flügel unten
+        ctx.fillRect(kemalX + 5, kemalY + 20, 10, 5); // Flügel unten
       }
     }
 
@@ -198,31 +170,66 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Wolken bewegen
-      clouds.forEach((cloud, index) => {
-        drawCloud(cloud);
-        cloud.x -= cloudSpeed;
-        if (cloud.x + cloud.width < 0) clouds.splice(index, 1);
+      // Pipes bewegen und zeichnen
+      pipes.forEach((pipe, index) => {
+        pipe.x -= pipeSpeed;
+
+        if (pipe.x + pipeWidth < 0) {
+          pipes.splice(index, 1);
+          score++;
+        }
+
+        drawPipe(pipe);
+
+        // Kollisionserkennung
+        if (
+          kemalX < pipe.x + pipeWidth &&
+          kemalX + 20 > pipe.x &&
+          (kemalY < pipe.height || kemalY + 20 > pipe.height + pipeGap)
+        ) {
+          endGame();
+        }
       });
 
-      // Häuser bewegen
-      houses.forEach((house, index) => {
-        drawHouse(house);
-        house.x -= 1;
-        if (house.x + house.width < 0) houses.splice(index, 1);
-      });
-
-      // Vogel animieren
-      if (gameStarted) {
-        kemalVelocity += gravity;
-        kemalY += kemalVelocity;
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        createPipe();
       }
-      drawKemal(kemalX, kemalY);
 
-      // Flügelanimation
+      // Vogelbewegung
+      kemalVelocity += gravity;
+      kemalY += kemalVelocity;
+
+      if (kemalY + 20 > canvas.height || kemalY < 0) {
+        endGame();
+      }
+
+      drawKemal();
+
       wingUp = !wingUp;
 
+      // Score anzeigen
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+
       requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      gameRunning = false;
+      document.getElementById("game-over-menu").classList.add("active");
+      document.getElementById("final-score").textContent = score;
+    }
+
+    function restartGame() {
+      document.getElementById("game-over-menu").classList.remove("active");
+      kemalY = canvas.height / 2;
+      kemalVelocity = 0;
+      pipes.length = 0;
+      score = 0;
+      gameStarted = false;
+      gameRunning = true;
+      gameLoop();
     }
 
     function startGame() {
@@ -233,12 +240,12 @@
       }
       playerName = nameInput;
       document.getElementById("main-menu").classList.remove("active");
-      canvas.style.display = "block";
       gameRunning = true;
       gameStarted = false;
       kemalY = canvas.height / 2;
       pipes.length = 0;
       score = 0;
+      canvas.style.display = "block";
       gameLoop();
     }
   </script>
