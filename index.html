@@ -1,204 +1,131 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Fronius</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Press Start 2P', cursive; /* Retro-Schriftart */
-      background-color: #222; /* Dunkler Retro-Hintergrund */
-      color: #FFF;
-    }
-
-    canvas {
-      display: block;
-      margin: 20px auto;
-      background: #87CEEB; /* Himmelblauer Hintergrund */
-      border: 5px solid #000;
-    }
-
-    .menu {
-      text-align: center;
-      padding: 20px;
-    }
-
-    .menu h1 {
-      font-size: 36px;
-      margin-bottom: 20px;
-    }
-
-    .menu button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background: #28a745;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .menu button:hover {
-      background: #218838;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #cheat-input {
-      display: block;
-      margin: 10px auto;
-      padding: 5px;
-      font-size: 16px;
-      text-align: center;
-    }
-
-    #color-options button {
-      margin: 5px;
-      padding: 10px;
-      border: 2px solid white;
-      cursor: pointer;
-    }
-
-    .retro-cloud {
-      position: absolute;
-      background: #FFF;
-      border-radius: 50%;
-      animation: moveCloud 15s linear infinite;
-    }
-
-    @keyframes moveCloud {
-      from {
-        left: 100%;
-      }
-      to {
-        left: -200px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innes Retro Spiele</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f1f1f1;
+            text-align: center;
+        }
+        .menu {
+            margin: 20px auto;
+        }
+        .menu button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        canvas {
+            border: 2px solid #f1f1f1;
+            margin: 20px auto;
+        }
+        #game-area {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <div id="main-menu" class="menu">
-    <h1>Flappy Fronius</h1>
-    <input id="player-name" type="text" placeholder="Spielername" />
-    <button id="start-game">Start</button>
-    <button id="color-menu">Farben ändern</button>
-    <button id="difficulty-menu">Schwierigkeitsgrad</button>
-    <button id="cheat-menu">Cheat Codes</button>
-    <div id="leaderboard">
-      <h2>Bestenliste</h2>
-      <ul id="leaderboard-list"></ul>
+    <h1>Innes Retro Spiele</h1>
+    <div class="menu" id="menu">
+        <h2>Hauptmenü</h2>
+        <button onclick="startGame('snake')">Snake</button>
+        <button onclick="startGame('tetris')">Tetris</button>
+        <button onclick="startGame('pacman')">Pac-Man</button>
+        <button onclick="startGame('game4')">Spiel 4</button>
+        <button onclick="startGame('game5')">Spiel 5</button>
+        <button onclick="startGame('game6')">Spiel 6</button>
+        <button onclick="startGame('game7')">Spiel 7</button>
+        <button onclick="startGame('game8')">Spiel 8</button>
+        <button onclick="startGame('game9')">Spiel 9</button>
+        <button onclick="startGame('game10')">Spiel 10</button>
     </div>
-  </div>
+    <div id="game-area">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <br>
+        <button onclick="backToMenu()">Zurück zum Menü</button>
+    </div>
 
-  <!-- Farbmenü -->
-  <div id="color-options" class="menu hidden">
-    <h1>Farbe auswählen</h1>
-    <button data-color="blue">Blau</button>
-    <button data-color="multi">Bunt</button>
-    <button data-color="yellow">Gelb</button>
-    <button data-color="green">Grün</button>
-    <button data-color="black">Schwarz</button>
-    <button id="back-to-main">Zurück</button>
-  </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
 
-  <!-- Schwierigkeitsmenü -->
-  <div id="difficulty-options" class="menu hidden">
-    <h1>Schwierigkeitsgrad</h1>
-    <button data-difficulty="1">Michi Altenhofer (Sehr leicht)</button>
-    <button data-difficulty="2">Leicht</button>
-    <button data-difficulty="3">Normal</button>
-    <button data-difficulty="4">Sehr schwer</button>
-    <button id="back-to-main-difficulty">Zurück</button>
-  </div>
+        function startGame(game) {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            if (game === 'snake') startSnake();
+            else if (game === 'tetris') startTetris();
+            else if (game === 'pacman') startPacman();
+            else alert('Spiel ' + game + ' ist noch nicht implementiert.');
+        }
 
-  <!-- Cheat-Menü -->
-  <div id="cheat-options" class="menu hidden">
-    <h1>Cheat Codes</h1>
-    <input id="cheat-input" type="text" placeholder="Gib einen Cheat ein" />
-    <button id="apply-cheat">Anwenden</button>
-    <button id="back-to-main-cheat">Zurück</button>
-  </div>
+        function backToMenu() {
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+            cancelAnimationFrame(animationId); // Stop the current game loop
+        }
 
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
+        let animationId;
 
-  <script>
-    // Variablen für Menüs
-    const mainMenu = document.getElementById("main-menu");
-    const colorMenu = document.getElementById("color-options");
-    const difficultyMenu = document.getElementById("difficulty-options");
-    const cheatMenu = document.getElementById("cheat-options");
-    const gameCanvas = document.getElementById("gameCanvas");
-    const ctx = gameCanvas.getContext("2d");
+        // Snake Game
+        let snake = [{x: 200, y: 200}];
+        let direction = {x: 0, y: 0};
+        let food = {x: 100, y: 100};
+        function startSnake() {
+            direction = {x: 0, y: 0};
+            snake = [{x: 200, y: 200}];
+            food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
+            gameLoopSnake();
+        }
 
-    // Globale Einstellungen
-    let selectedColor = "blue";
-    let selectedDifficulty = 3;
-    let godMode = false;
+        function gameLoopSnake() {
+            animationId = requestAnimationFrame(gameLoopSnake);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Spielername speichern
-    const playerNameInput = document.getElementById("player-name");
+            // Draw food
+            ctx.fillStyle = 'red';
+            ctx.fillRect(food.x, food.y, 20, 20);
 
-    // Farbwechsel
-    document.querySelectorAll("#color-options button").forEach(button => {
-      button.addEventListener("click", () => {
-        selectedColor = button.getAttribute("data-color");
-        colorMenu.classList.add("hidden");
-        mainMenu.classList.remove("hidden");
-      });
-    });
+            // Move snake
+            const head = {x: snake[0].x + direction.x, y: snake[0].y + direction.y};
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                food = {x: Math.floor(Math.random() * 20) * 20, y: Math.floor(Math.random() * 20) * 20};
+            } else {
+                snake.pop();
+            }
 
-    // Schwierigkeitsgrad wechseln
-    document.querySelectorAll("#difficulty-options button").forEach(button => {
-      button.addEventListener("click", () => {
-        selectedDifficulty = Number(button.getAttribute("data-difficulty"));
-        difficultyMenu.classList.add("hidden");
-        mainMenu.classList.remove("hidden");
-      });
-    });
+            // Check collision
+            if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 400 || snake.slice(1).some(s => s.x === head.x && s.y === head.y)) {
+                alert('Game Over!');
+                backToMenu();
+            }
 
-    // Cheat anwenden
-    document.getElementById("apply-cheat").addEventListener("click", () => {
-      const cheatInput = document.getElementById("cheat-input").value.toLowerCase();
-      if (cheatInput === "godmode") {
-        godMode = true;
-        alert("Godmode aktiviert!");
-      }
-      cheatMenu.classList.add("hidden");
-      mainMenu.classList.remove("hidden");
-    });
+            // Draw snake
+            ctx.fillStyle = 'lime';
+            snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
+        }
 
-    // Zurück zu den Menüs
-    document.getElementById("back-to-main").addEventListener("click", () => {
-      colorMenu.classList.add("hidden");
-      mainMenu.classList.remove("hidden");
-    });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' && direction.y === 0) direction = {x: 0, y: -20};
+            if (e.key === 'ArrowDown' && direction.y === 0) direction = {x: 0, y: 20};
+            if (e.key === 'ArrowLeft' && direction.x === 0) direction = {x: -20, y: 0};
+            if (e.key === 'ArrowRight' && direction.x === 0) direction = {x: 20, y: 0};
+        });
 
-    document.getElementById("back-to-main-difficulty").addEventListener("click", () => {
-      difficultyMenu.classList.add("hidden");
-      mainMenu.classList.remove("hidden");
-    });
+        // Placeholder for Tetris
+        function startTetris() {
+            alert('Tetris ist noch in Arbeit!');
+        }
 
-    document.getElementById("back-to-main-cheat").addEventListener("click", () => {
-      cheatMenu.classList.add("hidden");
-      mainMenu.classList.remove("hidden");
-    });
-
-    // Spiel starten
-    document.getElementById("start-game").addEventListener("click", () => {
-      const playerName = playerNameInput.value || "Unbekannter Spieler";
-      mainMenu.classList.add("hidden");
-      startGame(playerName);
-    });
-
-    // Spiel-Logik (Placeholder für später)
-    function startGame(playerName) {
-      console.log(`Spiel gestartet mit Spieler: ${playerName}, Farbe: ${selectedColor}, Schwierigkeit: ${selectedDifficulty}, Godmode: ${godMode}`);
-      // Hier beginnt das Spiel
-    }
-  </script>
+        // Placeholder for Pac-Man
+        function startPacman() {
+            alert('Pac-Man ist noch in Arbeit!');
+        }
+    </script>
 </body>
 </html>
