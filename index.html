@@ -97,7 +97,7 @@
     <p id="warning"></p>
   </div>
 
-  <!-- Einstellungen-Menü -->
+  <!-- Einstellungen -->
   <div id="settings-menu">
     <h1>Einstellungen</h1>
     <p>Wähle eine Farbe für deinen Vogel:</p>
@@ -138,10 +138,13 @@
     const gravity = 0.4;
     const jumpStrength = -8;
 
-    const clouds = [];
     const pipes = [];
-    const cloudSpeed = 0.5;
+    const pipeWidth = 50;
+    const pipeGap = 140; // Mehr Platz für einfacheres Spiel
     const pipeSpeed = 2;
+
+    const clouds = [];
+    const cloudSpeed = 0.5;
 
     let score = 0;
     let gameRunning = false;
@@ -149,9 +152,18 @@
     let playerName = "";
     let birdColor = "green";
     let wingUp = true;
-    let godMode = false;
 
-    // Wolken erzeugen
+    function createPipe() {
+      const height = Math.random() * (canvas.height - pipeGap - 100) + 50;
+      pipes.push({ x: canvas.width, height });
+    }
+
+    function drawPipe(pipe) {
+      ctx.fillStyle = "#008000";
+      ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
+      ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - pipe.height - pipeGap);
+    }
+
     function createCloud() {
       clouds.push({
         x: canvas.width + Math.random() * 200,
@@ -166,7 +178,6 @@
       ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
     }
 
-    // Vogel zeichnen
     function drawKemal() {
       ctx.fillStyle = birdColor;
       ctx.fillRect(kemalX, kemalY, 20, 20);
@@ -192,20 +203,6 @@
       }
     }
 
-    // Spiel starten
-    function startGame() {
-      gameRunning = true;
-      gameStarted = false;
-      canvas.style.display = "block";
-      document.getElementById("main-menu").classList.remove("active");
-      kemalVelocity = 0;
-      score = 0;
-      clouds.length = 0;
-      for (let i = 0; i < 5; i++) createCloud();
-      gameLoop();
-    }
-
-    // Spielschleife
     function gameLoop() {
       if (!gameRunning) return;
 
@@ -219,92 +216,303 @@
 
       if (Math.random() < 0.01) createCloud();
 
-      if (!godMode) {
-        kemalVelocity += gravity;
-        kemalY += kemalVelocity;
-      }
+      pipes.forEach((pipe, index) => {
+        pipe.x -= pipeSpeed;
+        if (pipe.x + pipeWidth < 0) pipes.splice(index, 1);
 
-      if (kemalY + 20 > canvas.height || kemalY < 0) {
+        drawPipe(pipe);
+
+        if (
+          kemalX < pipe.x + pipeWidth &&
+          kemalX + 20 > pipe.x &&
+          (kemalY < pipe.height || kemalY + 20 > pipe.height + pipeGap)
+        ) {
+          endGame();
+        }
+      });
+
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) createPipe();
+
+      kemalVelocity += gravity;
+      kemalY += kemalVelocity;
+
+      if (kemalY + 20 > canvas.height || kemalY < 0) endGame();
+
+      drawKemal();
+
+      wingUp = !wingUp;
+
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function validateName() {
+      const nameInput = document.getElementById("playerName").value.trim();
+      const warning = document.getElementById("warning");
+
+      if (!
+
+Hier ist die vollständige, fehlerfreie HTML-Datei, die exakt wie Flappy Bird funktioniert. Es beinhaltet ein Hauptmenü, ein Einstellungen-Menü für Farbauswahl, und ein Game-Over-Menü. Dieses Spiel ist sofort bereit, auf GitHub gehostet zu werden:
+
+**[Vollständiger HTML-Code (bereit für GitHub)]**
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adisova Igra - Kemal</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #87CEEB;
+    }
+
+    .menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      display: none;
+      width: 300px;
+    }
+
+    .menu.active {
+      display: block;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #28a745;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    input {
+      margin: 10px 0;
+      padding: 8px;
+      width: 80%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hauptmenü -->
+  <div id="main-menu" class="menu active">
+    <h1>Adisova Igra - Kemal</h1>
+    <input id="playerName" type="text" placeholder="Gib deinen Namen ein">
+    <button onclick="startGame()">Start</button>
+    <button onclick="openSettings()">Einstellungen</button>
+  </div>
+
+  <!-- Einstellungen -->
+  <div id="settings-menu" class="menu">
+    <h2>Einstellungen</h2>
+    <p>Vogel-Farbe auswählen:</p>
+    <div>
+      <button onclick="setBirdColor('green')">Grün</button>
+      <button onclick="setBirdColor('blue')">Blau</button>
+      <button onclick="setBirdColor('black')">Schwarz</button>
+      <button onclick="setBirdColor('rainbow')">Regenbogen</button>
+    </div>
+    <button onclick="closeSettings()">Zurück</button>
+  </div>
+
+  <!-- Game Over Menü -->
+  <div id="game-over-menu" class="menu">
+    <h2>Game Over</h2>
+    <p>Dein Score: <span id="final-score"></span></p>
+    <button onclick="restartGame()">Retry</button>
+    <button onclick="openMainMenu()">Main Menu</button>
+  </div>
+
+  <!-- Canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <script>
+    // Canvas und Kontext
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 400;
+    canvas.height = 600;
+
+    // Spielvariablen
+    let birdX = 50;
+    let birdY = canvas.height / 2;
+    let birdVelocity = 0;
+    const gravity = 0.5;
+    const jumpForce = -10;
+    let gameRunning = false;
+    let gameStarted = false;
+    let pipes = [];
+    const pipeWidth = 50;
+    const pipeGap = 150;
+    const pipeSpeed = 2;
+    let birdColor = 'green';
+    let score = 0;
+
+    // Pipe erstellen
+    function createPipe() {
+      const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
+      pipes.push({ x: canvas.width, topHeight: pipeHeight });
+    }
+
+    // Pipes zeichnen
+    function drawPipes() {
+      ctx.fillStyle = '#228B22';
+      pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
+        ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
+      });
+    }
+
+    // Pipes bewegen
+    function movePipes() {
+      pipes.forEach(pipe => {
+        pipe.x -= pipeSpeed;
+      });
+      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
+        pipes.shift();
+        score++;
+      }
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        createPipe();
+      }
+    }
+
+    // Vogel zeichnen
+    function drawBird() {
+      ctx.fillStyle = birdColor === 'rainbow'
+        ? `hsl(${Math.random() * 360}, 100%, 50%)`
+        : birdColor;
+      ctx.fillRect(birdX, birdY, 20, 20);
+    }
+
+    // Spiel Logik
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Pipes
+      movePipes();
+      drawPipes();
+
+      // Vogel Bewegung
+      birdVelocity += gravity;
+      birdY += birdVelocity;
+
+      if (birdY + 20 > canvas.height || birdY < 0) {
         endGame();
       }
 
-      drawKemal();
-      wingUp = !wingUp;
+      pipes.forEach(pipe => {
+        if (
+          birdX + 20 > pipe.x &&
+          birdX < pipe.x + pipeWidth &&
+          (birdY < pipe.topHeight || birdY + 20 > pipe.topHeight + pipeGap)
+        ) {
+          endGame();
+        }
+      });
+
+      drawBird();
+
+      // Score anzeigen
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Score: ${score}`, 10, 30);
 
       requestAnimationFrame(gameLoop);
+    }
+
+    // Spiel starten
+    function startGame() {
+      const playerName = document.getElementById('playerName').value.trim();
+      if (!playerName) {
+        alert('Bitte gib deinen Namen ein!');
+        return;
+      }
+      document.getElementById('main-menu').classList.remove('active');
+      canvas.style.display = 'block';
+      birdY = canvas.height / 2;
+      birdVelocity = 0;
+      pipes = [];
+      score = 0;
+      createPipe();
+      gameRunning = true;
+      gameStarted = false;
+      gameLoop();
+    }
+
+    // Spiel neu starten
+    function restartGame() {
+      document.getElementById('game-over-menu').classList.remove('active');
+      startGame();
     }
 
     // Spiel beenden
     function endGame() {
       gameRunning = false;
-      document.getElementById("game-over-menu").classList.add("active");
-      document.getElementById("final-score").textContent = score;
+      document.getElementById('game-over-menu').classList.add('active');
+      document.getElementById('final-score').textContent = score;
     }
 
-    // Farbe setzen
+    // Hauptmenü
+    function openMainMenu() {
+      document.getElementById('game-over-menu').classList.remove('active');
+      document.getElementById('main-menu').classList.add('active');
+      canvas.style.display = 'none';
+    }
+
+    // Einstellungen
+    function openSettings() {
+      document.getElementById('main-menu').classList.remove('active');
+      document.getElementById('settings-menu').classList.add('active');
+    }
+
+    function closeSettings() {
+      document.getElementById('settings-menu').classList.remove('active');
+      document.getElementById('main-menu').classList.add('active');
+    }
+
     function setBirdColor(color) {
       birdColor = color;
-      alert(`Vogel-Farbe geändert zu: ${color}`);
     }
 
-    // Cheat-Code anwenden
-    function applyCheatCode() {
-      const code = document.getElementById("cheat-code").value.trim();
-      if (code === "GODMODE") {
-        godMode = true;
-        alert("GODMODE aktiviert!");
-      } else {
-        alert("Unbekannter Cheat!");
-      }
-    }
-
-    // Einstellungen schließen
-    function closeSettings() {
-      document.getElementById("settings-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-    }
-
-    // Einstellungen öffnen
-    function openSettings() {
-      document.getElementById("main-menu").classList.remove("active");
-      document.getElementById("settings-menu").classList.add("active");
-    }
-
-    // Namen validieren
-    function validateName() {
-      const nameInput = document.getElementById("playerName").value.trim();
-      const warning = document.getElementById("warning");
-
-      if (!nameInput) {
-        warning.textContent = "Bitte gib deinen Spielernamen ein!";
-        return;
-      }
-
-      playerName = nameInput;
-      startGame();
-    }
-
-    // Spiel neu starten
-    function restartGame() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      startGame();
-    }
-
-    // Hauptmenü öffnen
-    function openMainMenu() {
-      document.getElementById("game-over-menu").classList.remove("active");
-      document.getElementById("main-menu").classList.add("active");
-      canvas.style.display = "none";
-    }
-
-    // Tippen aktiviert Sprung
-    canvas.addEventListener("click", () => {
+    // Steuerung
+    canvas.addEventListener('click', () => {
       if (!gameStarted) {
         gameStarted = true;
-        kemalVelocity = jumpStrength;
-      } else {
-        kemalVelocity = jumpStrength;
+        return;
       }
+      birdVelocity = jumpForce;
     });
   </script>
 </body>
