@@ -15,10 +15,10 @@
         canvas {
             display: block;
             margin: 20px auto;
-            background-color: #111;
+            background-color: #222;
             border: 2px solid white;
         }
-        .menu, .game-over, .game {
+        .menu, .game, .game-over {
             display: none;
         }
         .menu button, .menu input {
@@ -27,16 +27,16 @@
             font-size: 18px;
         }
         .leaderboard {
-            background: #222;
             margin: 20px auto;
             padding: 10px;
             border-radius: 10px;
-            width: 300px;
+            background-color: #333;
             color: white;
+            width: 300px;
         }
-        .leaderboard .rank {
-            font-size: 16px;
+        .rank {
             margin: 5px 0;
+            font-size: 16px;
         }
         .gold { color: gold; }
         .silver { color: silver; }
@@ -53,12 +53,12 @@
         <input type="text" id="playerName" placeholder="Name eingeben" />
         <br>
         <button onclick="startGame()">Spiel starten</button>
-        <button onclick="showLeaderboard()">Bestenliste anzeigen</button>
+        <button onclick="showLeaderboard()">Bestenliste</button>
     </div>
 
     <!-- Bestenliste -->
-    <div class="menu" id="leaderboard" style="display: none;">
-        <h2>Bestenliste</h2>
+    <div class="menu" id="leaderboard">
+        <h2>Top-Spieler</h2>
         <div class="leaderboard" id="leaderboardList">
             <p class="rank gold">1. ---</p>
             <p class="rank silver">2. ---</p>
@@ -67,14 +67,14 @@
         <button onclick="backToMenu()">Zurück</button>
     </div>
 
-    <!-- Spielbereich -->
-    <div class="game" id="gameArea" style="display: none;">
+    <!-- Spiel -->
+    <div class="game" id="gameArea">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
         <p id="scoreDisplay">Punkte: 0</p>
     </div>
 
     <!-- Game Over -->
-    <div class="menu" id="gameOver" style="display: none;">
+    <div class="game-over" id="gameOver">
         <h2>Spiel vorbei!</h2>
         <p id="finalScore">Dein Punktestand: 0</p>
         <button onclick="backToMenu()">Zurück zum Menü</button>
@@ -100,7 +100,6 @@
         ];
         let animationId;
 
-        // Initialisiere Spiel
         function resetGame() {
             gameState = 'playing';
             score = 0;
@@ -162,6 +161,55 @@
             }
         }
 
+        function updatePacMan() {
+            pacMan.x += pacMan.direction.x * pacMan.speed;
+            pacMan.y += pacMan.direction.y * pacMan.speed;
+
+            if (pacMan.x < 0) pacMan.x = canvas.width;
+            if (pacMan.x > canvas.width) pacMan.x = 0;
+            if (pacMan.y < 0) pacMan.y = canvas.height;
+            if (pacMan.y > canvas.height) pacMan.y = 0;
+
+            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
+                pacMan.poweredUpTime--;
+            } else {
+                pacMan.poweredUp = false;
+                pacMan.speed = 2;
+            }
+        }
+
+        function drawPacMan() {
+            ctx.fillStyle = pacMan.poweredUp ? 'yellow' : 'gold';
+            ctx.beginPath();
+            ctx.arc(pacMan.x, pacMan.y, pacMan.size, 0.2 * Math.PI, 1.8 * Math.PI);
+            ctx.lineTo(pacMan.x, pacMan.y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function updateGhosts() {
+            ghosts.forEach(ghost => {
+                ghost.x += ghost.direction.x * ghost.speed;
+                ghost.y += ghost.direction.y * ghost.speed;
+
+                if (!ghost.canWalkThroughWalls) {
+                    if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
+                        ghost.direction.x = -ghost.direction.x;
+                        ghost.direction.y = -ghost.direction.y;
+                    }
+                }
+            });
+        }
+
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
         function drawDots() {
             dots.forEach(dot => {
                 if (!dot.eaten) {
@@ -169,6 +217,26 @@
                     ctx.beginPath();
                     ctx.arc(dot.x, dot.y, 5, 0, 2 * Math.PI);
                     ctx.fill();
+                }
+            });
+        }
+
+        function checkCollisions() {
+            dots.forEach(dot => {
+                if (!dot.eaten && Math.hypot(dot.x - pacMan.x, dot.y - pacMan.y) < pacMan.size) {
+                    dot.eaten = true;
+                    score += 100;
+                    if (score % 1000 === 0) {
+                        pacMan.poweredUp = true;
+                        pacMan.poweredUpTime = 180; // 3 Sekunden
+                        pacMan.speed = 4;
+                    }
+                }
+            });
+
+            ghosts.forEach(ghost => {
+                if (Math.hypot(ghost.x - pacMan.x, ghost.y - pacMan.y) < pacMan.size + 20) {
+                    gameState = 'game-over';
                 }
             });
         }
@@ -197,6 +265,12 @@
             document.getElementById('leaderboard').style.display = 'block';
         }
 
+        function showGameOverScreen() {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'block';
+            finalScoreDisplay.textContent = `Dein Punktestand: ${score}`;
+        }
+
         function backToMenu() {
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'none';
@@ -207,4 +281,8 @@
             if (e.key === 'ArrowUp') pacMan.direction = { x: 0, y: -1 };
             if (e.key === 'ArrowDown') pacMan.direction = { x: 0, y: 1 };
             if (e.key === 'ArrowLeft') pacMan.direction = { x: -1, y: 0 };
-            if (e.key === 'ArrowRight') pacMan.direction = { x:
+            if (e.key === 'ArrowRight') pacMan.direction = { x: 1, y: 0 };
+        });
+    </script>
+</body>
+</html>
