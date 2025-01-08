@@ -8,14 +8,14 @@
     body {
       margin: 0;
       overflow: hidden;
-      background-color: #87CEEB; /* Himmelblau */
       font-family: Arial, sans-serif;
+      background-color: #87CEEB; /* Himmelblau */
     }
 
     canvas {
       display: block;
       margin: 0 auto;
-      background: #87CEEB; /* Himmelblau */
+      background: #87CEEB;
     }
 
     #main-menu, #settings-menu, #game-over-menu {
@@ -29,6 +29,7 @@
       padding: 20px;
       border-radius: 10px;
       display: none;
+      width: 80%;
     }
 
     #main-menu.active, #settings-menu.active, #game-over-menu.active {
@@ -37,25 +38,32 @@
 
     button {
       padding: 10px 20px;
-      margin: 5px;
+      margin: 10px;
       font-size: 16px;
       cursor: pointer;
     }
 
-    #warning {
-      color: red;
-      font-weight: bold;
+    #settings-menu input {
       margin-top: 10px;
+      padding: 5px;
+      width: 80%;
+      font-size: 14px;
+    }
+
+    #color-options {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
     }
 
     .color-option {
-      display: inline-block;
       width: 50px;
       height: 50px;
-      margin: 10px;
+      margin: 0 10px;
       cursor: pointer;
       border: 2px solid white;
       border-radius: 5px;
+      display: inline-block;
     }
 
     .color-option.selected {
@@ -69,12 +77,12 @@
     <p>Bitte gib deinen Spielernamen ein:</p>
     <input type="text" id="playerName" placeholder="Spielername">
     <button onclick="startGame()">Start</button>
-    <p id="warning"></p>
+    <p id="warning" style="color: red;"></p>
   </div>
 
   <div id="settings-menu">
     <h1>Einstellungen</h1>
-    <p>Wähle eine Farbe für deinen Charakter:</p>
+    <p>Wähle eine Farbe für deinen Vogel:</p>
     <div id="color-options">
       <div class="color-option" style="background-color: purple;" data-color="purple"></div>
       <div class="color-option" style="background-color: green;" data-color="green"></div>
@@ -82,6 +90,9 @@
       <div class="color-option" style="background-color: black;" data-color="black"></div>
       <div class="color-option" style="background: linear-gradient(45deg, red, yellow, green, blue);" data-color="rainbow"></div>
     </div>
+    <p>Cheat Code eingeben:</p>
+    <input type="text" id="cheat-code" placeholder="Cheat Code hier eingeben">
+    <button onclick="applyCheatCode()">Cheat anwenden</button>
     <button onclick="closeSettings()">Zurück</button>
   </div>
 
@@ -113,62 +124,31 @@
     const pipeGap = 150;
     const pipeSpeed = 2;
 
-    const clouds = [];
-    const cloudSpeed = 0.5;
-
     let score = 0;
     let gameRunning = false;
-    let gameStarted = false; // Start erst nach dem ersten Tippen
+    let gameStarted = false;
     let nameAttempts = 0;
     let playerName = "";
     let birdColor = "green";
+    let cheatActive = false;
 
-    // Generate clouds for background
-    function createCloud() {
-      clouds.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height / 2,
-        width: 50 + Math.random() * 50,
-        height: 20 + Math.random() * 20,
-      });
-    }
+    // Vogel-Animation
+    let wingUp = true;
 
-    function drawCloud(cloud) {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
-    }
-
-    // Start Game
-    function startGame() {
-      const nameInput = document.getElementById("playerName").value.trim();
-      const warningElement = document.getElementById("warning");
-
-      if (nameInput === "") {
-        nameAttempts++;
-
-        if (nameAttempts === 1) {
-          warningElement.textContent = "Insert player name!";
-        } else if (nameAttempts === 2) {
-          warningElement.textContent = "Name ???";
-        } else if (nameAttempts === 3) {
-          warningElement.textContent = "Trebaju ti naočale, ime dodaj!";
-        }
-        return;
-      }
-
-      playerName = nameInput;
-      document.getElementById("main-menu").classList.remove("active");
-      canvas.style.display = "block";
-      gameRunning = true;
-      gameLoop();
-    }
-
-    // Draw Pixel Bird
+    // Draw Vogel
     function drawKemal(x, y) {
       ctx.fillStyle = birdColor === "rainbow"
         ? createRainbowGradient(x, y, 20, 20)
         : birdColor;
       ctx.fillRect(x, y, 20, 20);
+
+      // Flügel
+      ctx.fillStyle = "#FFFFFF";
+      if (wingUp) {
+        ctx.fillRect(x + 5, y - 10, 10, 5); // Flügel oben
+      } else {
+        ctx.fillRect(x + 5, y + 20, 10, 5); // Flügel unten
+      }
     }
 
     function createRainbowGradient(x, y, width, height) {
@@ -181,48 +161,26 @@
       return gradient;
     }
 
-    // Main Game Loop
     function gameLoop() {
       if (!gameRunning) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Background Clouds
-      clouds.forEach((cloud, index) => {
-        drawCloud(cloud);
-        cloud.x -= cloudSpeed;
-
-        // Reset cloud position
-        if (cloud.x + cloud.width < 0) {
-          clouds[index].x = canvas.width;
-        }
-      });
-
-      // Draw Bird
+      // Vogel zeichnen
       drawKemal(kemalX, kemalY);
 
       if (gameStarted) {
         kemalVelocity += gravity;
         kemalY += kemalVelocity;
 
-        // Generate Pipes
-        if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-          createPipe();
-        }
-
-        // Move and Draw Pipes
+        // Pipes bewegen und zeichnen
         pipes.forEach((pipe, index) => {
           pipe.x -= pipeSpeed;
-          ctx.fillStyle = "#008000"; // Green
+          ctx.fillStyle = "#008000"; // Grün
           ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
           ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - (pipe.height + pipeGap));
 
-          // Remove pipes that go off-screen
-          if (pipe.x + pipeWidth < 0) {
-            pipes.splice(index, 1);
-          }
-
-          // Collision Detection
+          // Kollisionserkennung
           if (
             kemalX + 20 > pipe.x &&
             kemalX < pipe.x + pipeWidth &&
@@ -233,58 +191,30 @@
         });
       }
 
-      // Prevent falling before first tap
-      if (!gameStarted) {
-        kemalY = canvas.height / 2;
-        kemalVelocity = 0;
-      }
-
-      // Check if Bird Hits Ground
-      if (kemalY + 20 > canvas.height) {
-        endGame();
-      }
-
-      // Draw Score
-      ctx.fillStyle = "#FFFFFF";
-      ctx.font = "20px Arial";
-      ctx.fillText(`Score: ${score}`, 10, 30);
-
       requestAnimationFrame(gameLoop);
     }
 
-    // Handle First Tap to Start Game
-    canvas.addEventListener("touchstart", () => {
-      if (!gameStarted) {
-        gameStarted = true;
-      }
-      kemalVelocity = jumpStrength;
-    });
-
-    function createPipe() {
-      const height = Math.random() * (canvas.height - pipeGap - 50) + 50;
-      pipes.push({ x: canvas.width, height });
-    }
-
-    function endGame() {
-      gameRunning = false;
-      document.getElementById("game-over-menu").classList.add("active");
-      document.getElementById("final-score").textContent = score;
-    }
-
-    function restartGame() {
+    function openMainMenu() {
       document.getElementById("game-over-menu").classList.remove("active");
-      kemalY = canvas.height / 2;
-      kemalVelocity = 0;
-      pipes.length = 0;
-      score = 0;
-      gameStarted = false;
-      gameRunning = true;
-      gameLoop();
+      document.getElementById("main-menu").classList.add("active");
     }
 
-    // Populate Clouds
-    for (let i = 0; i < 5; i++) {
-      createCloud();
+    function openSettings() {
+      document.getElementById("game-over-menu").classList.remove("active");
+      document.getElementById("settings-menu").classList.add("active");
+    }
+
+    function closeSettings() {
+      document.getElementById("settings-menu").classList.remove("active");
+      document.getElementById("main-menu").classList.add("active");
+    }
+
+    function applyCheatCode() {
+      const cheatCode = document.getElementById("cheat-code").value.trim();
+      if (cheatCode === "GODMODE") {
+        alert("Cheat aktiviert: Unbesiegbar!");
+        cheatActive = true;
+      }
     }
   </script>
 </body>
