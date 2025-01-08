@@ -51,6 +51,9 @@
     <!-- Main Menu -->
     <div class="menu" id="mainMenu">
         <h2>Hauptmenü</h2>
+        <label for="playerName">Spielername:</label>
+        <input type="text" id="playerName" placeholder="Name eingeben" />
+        <br>
         <button onclick="startGame()">Spiel starten</button>
         <button onclick="showLeaderboard()">Bestenliste</button>
     </div>
@@ -83,14 +86,20 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        let gameState, score, pacMan, powerUp, ghosts, highScores;
+        let gameState, score, pacMan, ghosts, highScores;
         let animationId;
+
+        // Initialisieren der Bestenliste
+        highScores = [
+            { name: "---", score: 0 },
+            { name: "---", score: 0 },
+            { name: "---", score: 0 }
+        ];
 
         function resetGame() {
             gameState = 'playing';
             score = 0;
             pacMan = { x: 300, y: 300, size: 20, speed: 2, direction: 'right', poweredUp: false, poweredUpTime: 0 };
-            powerUp = null;
             ghosts = [
                 { x: 100, y: 100, speed: 1, direction: 'down', canWalkThroughWalls: true },
                 { x: 500, y: 500, speed: 1, direction: 'up', canWalkThroughWalls: false }
@@ -98,6 +107,12 @@
         }
 
         function startGame() {
+            const playerName = document.getElementById('playerName').value.trim();
+            if (!playerName) {
+                alert("Bitte gib deinen Spielernamen ein!");
+                return;
+            }
+
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             resetGame();
@@ -107,23 +122,16 @@
         function updateGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Update Pac-Man
+            // Pac-Man aktualisieren
             updatePacMan();
             drawPacMan();
 
-            // Update and draw ghosts
+            // Geister aktualisieren und zeichnen
             ghosts.forEach(updateGhost);
             ghosts.forEach(drawGhost);
 
-            // Check collisions and update score
+            // Punkte aktualisieren und Kollisionen prüfen
             checkCollisions();
-
-            // Power-up management
-            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
-                pacMan.poweredUpTime -= 1;
-            } else {
-                pacMan.poweredUp = false;
-            }
 
             document.getElementById('score').textContent = `Punkte: ${score}`;
 
@@ -183,30 +191,42 @@
                     gameState = 'game-over';
                 }
             });
-
-            // Scoring logic and power-up activation
-            if (score >= 1000 && !pacMan.poweredUp) {
-                pacMan.poweredUp = true;
-                pacMan.poweredUpTime = 180; // Power-up lasts for 3 seconds (at 60 FPS)
-            }
         }
 
         function endGame() {
             cancelAnimationFrame(animationId);
+            const playerName = document.getElementById('playerName').value.trim();
+            updateHighScores(playerName, score);
+            showGameOverScreen();
+        }
+
+        function updateHighScores(name, score) {
+            highScores.push({ name, score });
+            highScores.sort((a, b) => b.score - a.score);
+            highScores = highScores.slice(0, 3);
+        }
+
+        function showGameOverScreen() {
             document.getElementById('gameArea').style.display = 'none';
             document.getElementById('gameOver').style.display = 'block';
             document.getElementById('finalScore').textContent = `Dein Punktestand: ${score}`;
         }
 
-        function backToMenu() {
-            document.getElementById('gameArea').style.display = 'none';
-            document.getElementById('gameOver').style.display = 'none';
-            document.getElementById('mainMenu').style.display = 'block';
-        }
-
         function showLeaderboard() {
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'block';
+            const leaderboardList = document.getElementById('leaderboardList');
+            leaderboardList.innerHTML = highScores.map((player, index) => {
+                const medal = index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze';
+                return `<p class="rank ${medal}">${index + 1}. ${player.name} (${player.score})</p>`;
+            }).join('');
+        }
+
+        function backToMenu() {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('leaderboard').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'block';
         }
     </script>
 </body>
