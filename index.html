@@ -18,7 +18,7 @@
       background: #87CEEB; /* Himmelblau */
     }
 
-    #main-menu {
+    #main-menu, #settings-menu, #game-over-menu {
       position: absolute;
       top: 50%;
       left: 50%;
@@ -28,6 +28,18 @@
       color: white;
       padding: 20px;
       border-radius: 10px;
+      display: none;
+    }
+
+    #main-menu.active, #settings-menu.active, #game-over-menu.active {
+      display: block;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
     }
 
     #warning {
@@ -36,28 +48,49 @@
       margin-top: 10px;
     }
 
-    .game-over {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 20px;
-      border-radius: 10px;
+    .color-option {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      margin: 10px;
+      cursor: pointer;
+      border: 2px solid white;
+      border-radius: 5px;
+    }
+
+    .color-option.selected {
+      border: 3px solid gold;
     }
   </style>
 </head>
 <body>
-  <div id="main-menu">
+  <div id="main-menu" class="active">
     <h1>Adisova Igra - Kemal</h1>
     <p>Bitte gib deinen Spielernamen ein:</p>
     <input type="text" id="playerName" placeholder="Spielername">
     <button onclick="startGame()">Start</button>
     <p id="warning"></p>
+  </div>
+
+  <div id="settings-menu">
+    <h1>Einstellungen</h1>
+    <p>Wähle eine Farbe für deinen Charakter:</p>
+    <div id="color-options">
+      <div class="color-option" style="background-color: purple;" data-color="purple"></div>
+      <div class="color-option" style="background-color: green;" data-color="green"></div>
+      <div class="color-option" style="background-color: blue;" data-color="blue"></div>
+      <div class="color-option" style="background-color: black;" data-color="black"></div>
+      <div class="color-option" style="background: linear-gradient(45deg, red, yellow, green, blue);" data-color="rainbow"></div>
+    </div>
+    <button onclick="closeSettings()">Zurück</button>
+  </div>
+
+  <div id="game-over-menu">
+    <h1>Game Over</h1>
+    <p>Score: <span id="final-score"></span></p>
+    <button onclick="restartGame()">Retry</button>
+    <button onclick="openMainMenu()">Main Menu</button>
+    <button onclick="openSettings()">Settings</button>
   </div>
 
   <canvas id="gameCanvas" style="display: none;"></canvas>
@@ -80,10 +113,30 @@
     const pipeGap = 150;
     const pipeSpeed = 2;
 
+    const clouds = [];
+    const cloudSpeed = 0.5;
+
     let score = 0;
     let gameRunning = false;
+    let gameStarted = false; // Start erst nach dem ersten Tippen
     let nameAttempts = 0;
     let playerName = "";
+    let birdColor = "green";
+
+    // Generate clouds for background
+    function createCloud() {
+      clouds.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height / 2,
+        width: 50 + Math.random() * 50,
+        height: 20 + Math.random() * 20,
+      });
+    }
+
+    function drawCloud(cloud) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(cloud.x, cloud.y, cloud.width, cloud.height);
+    }
 
     // Start Game
     function startGame() {
@@ -104,40 +157,28 @@
       }
 
       playerName = nameInput;
-      document.getElementById("main-menu").style.display = "none";
+      document.getElementById("main-menu").classList.remove("active");
       canvas.style.display = "block";
       gameRunning = true;
-      createPipe();
       gameLoop();
     }
 
     // Draw Pixel Bird
     function drawKemal(x, y) {
-      ctx.fillStyle = "#00FF00"; // Green bird
+      ctx.fillStyle = birdColor === "rainbow"
+        ? createRainbowGradient(x, y, 20, 20)
+        : birdColor;
       ctx.fillRect(x, y, 20, 20);
-      ctx.fillStyle = "#FFD700"; // Yellow beak
-      ctx.fillRect(x + 15, y + 5, 5, 10);
-      ctx.fillStyle = "#FFFFFF"; // White eye
-      ctx.fillRect(x + 5, y + 5, 5, 5);
     }
 
-    // Draw Pixel Clouds
-    function drawCloud(x, y) {
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillRect(x, y, 50, 20);
-      ctx.fillRect(x + 15, y - 10, 30, 30);
-      ctx.fillRect(x - 15, y, 20, 20);
-    }
-
-    // Generate Pipes
-    function createPipe() {
-      const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
-      pipes.push({
-        x: canvas.width,
-        topY: 0,
-        bottomY: pipeHeight + pipeGap,
-        height: pipeHeight,
-      });
+    function createRainbowGradient(x, y, width, height) {
+      const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+      gradient.addColorStop(0, "red");
+      gradient.addColorStop(0.25, "yellow");
+      gradient.addColorStop(0.5, "green");
+      gradient.addColorStop(0.75, "blue");
+      gradient.addColorStop(1, "purple");
+      return gradient;
     }
 
     // Main Game Loop
@@ -146,55 +187,60 @@
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Background
-      ctx.fillStyle = "#87CEEB";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw Background Clouds
+      clouds.forEach((cloud, index) => {
+        drawCloud(cloud);
+        cloud.x -= cloudSpeed;
 
-      // Draw Clouds
-      drawCloud(50, 100);
-      drawCloud(200, 150);
-      drawCloud(300, 50);
+        // Reset cloud position
+        if (cloud.x + cloud.width < 0) {
+          clouds[index].x = canvas.width;
+        }
+      });
 
-      // Draw Kemal
+      // Draw Bird
       drawKemal(kemalX, kemalY);
 
-      // Apply Gravity
-      kemalVelocity += gravity;
-      kemalY += kemalVelocity;
+      if (gameStarted) {
+        kemalVelocity += gravity;
+        kemalY += kemalVelocity;
 
-      // Pipes Logic
-      for (let i = 0; i < pipes.length; i++) {
-        const pipe = pipes[i];
-
-        pipe.x -= pipeSpeed;
-
-        // Draw Pipes
-        ctx.fillStyle = "#008000";
-        ctx.fillRect(pipe.x, pipe.topY, pipeWidth, pipe.height);
-        ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
-
-        // Check for Collisions
-        if (
-          kemalX + 20 > pipe.x &&
-          kemalX < pipe.x + pipeWidth &&
-          (kemalY < pipe.height || kemalY + 20 > pipe.bottomY)
-        ) {
-          endGame();
+        // Generate Pipes
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+          createPipe();
         }
+
+        // Move and Draw Pipes
+        pipes.forEach((pipe, index) => {
+          pipe.x -= pipeSpeed;
+          ctx.fillStyle = "#008000"; // Green
+          ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);
+          ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height - (pipe.height + pipeGap));
+
+          // Remove pipes that go off-screen
+          if (pipe.x + pipeWidth < 0) {
+            pipes.splice(index, 1);
+          }
+
+          // Collision Detection
+          if (
+            kemalX + 20 > pipe.x &&
+            kemalX < pipe.x + pipeWidth &&
+            (kemalY < pipe.height || kemalY > pipe.height + pipeGap)
+          ) {
+            endGame();
+          }
+        });
       }
 
-      // Remove Off-Screen Pipes
-      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
-        pipes.shift();
+      // Prevent falling before first tap
+      if (!gameStarted) {
+        kemalY = canvas.height / 2;
+        kemalVelocity = 0;
       }
 
-      // Create New Pipes
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        createPipe();
-      }
-
-      // Check for Ground Collision
-      if (kemalY + 20 > canvas.height || kemalY < 0) {
+      // Check if Bird Hits Ground
+      if (kemalY + 20 > canvas.height) {
         endGame();
       }
 
@@ -202,40 +248,44 @@
       ctx.fillStyle = "#FFFFFF";
       ctx.font = "20px Arial";
       ctx.fillText(`Score: ${score}`, 10, 30);
-      ctx.fillText(`Player: ${playerName}`, 10, 50);
 
       requestAnimationFrame(gameLoop);
     }
 
-    // End Game
-    function endGame() {
-      gameRunning = false;
-      const gameOverDiv = document.createElement("div");
-      gameOverDiv.classList.add("game-over");
-      gameOverDiv.innerHTML = `
-        <p>Game Over!</p>
-        <p>Score: ${score}</p>
-        <button onclick="restartGame()">Restart</button>
-      `;
-      document.body.appendChild(gameOverDiv);
+    // Handle First Tap to Start Game
+    canvas.addEventListener("touchstart", () => {
+      if (!gameStarted) {
+        gameStarted = true;
+      }
+      kemalVelocity = jumpStrength;
+    });
+
+    function createPipe() {
+      const height = Math.random() * (canvas.height - pipeGap - 50) + 50;
+      pipes.push({ x: canvas.width, height });
     }
 
-    // Restart Game
+    function endGame() {
+      gameRunning = false;
+      document.getElementById("game-over-menu").classList.add("active");
+      document.getElementById("final-score").textContent = score;
+    }
+
     function restartGame() {
-      document.querySelector(".game-over").remove();
-      kemalX = 50;
+      document.getElementById("game-over-menu").classList.remove("active");
       kemalY = canvas.height / 2;
       kemalVelocity = 0;
       pipes.length = 0;
       score = 0;
+      gameStarted = false;
       gameRunning = true;
       gameLoop();
     }
 
-    // Tap to Jump (Mobile-Friendly)
-    canvas.addEventListener("touchstart", () => {
-      if (gameRunning) kemalVelocity = jumpStrength;
-    });
+    // Populate Clouds
+    for (let i = 0; i < 5; i++) {
+      createCloud();
+    }
   </script>
 </body>
 </html>
