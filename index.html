@@ -1,193 +1,241 @@
 <!DOCTYPE html>
-<html lang="hr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mama Reda Šerpe</title>
-    <style>
-        /* Allgemeines Styling */
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(120deg, #ff9a9e, #fad0c4);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adisova Igra - Kemal</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #87CEEB; /* Himmelblau */
+      font-family: Arial, sans-serif;
+    }
 
-        h1 {
-            color: #ffffff;
-            font-size: 3em;
-            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-        }
+    canvas {
+      display: block;
+      margin: 0 auto;
+      background: #87CEEB; /* Himmelblau */
+    }
 
-        .menu, .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+    #main-menu {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
 
-        .menu {
-            text-align: center;
-        }
+    #warning {
+      color: red;
+      font-weight: bold;
+      margin-top: 10px;
+    }
 
-        .menu button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 1.5em;
-            color: white;
-            background-color: #ff6f61;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s, background 0.2s;
-        }
-
-        .menu button:hover {
-            transform: scale(1.1);
-            background-color: #ff3b3b;
-        }
-
-        .game-container {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            width: 400px;
-            height: 600px;
-            background: #ffffff;
-            border: 10px solid #ff6f61;
-            border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        canvas {
-            border: 3px solid #ff6f61;
-            border-radius: 10px;
-            background-color: #e8f6f3;
-        }
-
-        .scoreboard {
-            margin-top: 10px;
-            font-size: 1.2em;
-            color: #ff6f61;
-        }
-    </style>
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
-    <!-- Hauptmenü -->
-    <div class="menu" id="menu">
-        <h1>Mama Reda Šerpe</h1>
-        <button onclick="startGame()">Započni igru</button>
-    </div>
+  <div id="main-menu">
+    <h1>Adisova Igra - Kemal</h1>
+    <p>Bitte gib deinen Spielernamen ein:</p>
+    <input type="text" id="playerName" placeholder="Spielername">
+    <button onclick="startGame()">Start</button>
+    <p id="warning"></p>
+  </div>
 
-    <!-- Spielfeld -->
-    <div class="game-container" id="gameContainer">
-        <canvas id="gameCanvas" width="400" height="600"></canvas>
-        <div class="scoreboard">Bodovi: <span id="score">0</span></div>
-    </div>
+  <canvas id="gameCanvas" style="display: none;"></canvas>
 
-    <script>
-        const menu = document.getElementById("menu");
-        const gameContainer = document.getElementById("gameContainer");
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const scoreDisplay = document.getElementById("score");
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-        let snake = [{ x: 200, y: 300 }];
-        let direction = { x: 0, y: -20 };
-        let food = { x: 200, y: 100 };
-        let score = 0;
-        let gameLoop;
+    canvas.width = 400;
+    canvas.height = 600;
 
-        // Spiel starten
-        function startGame() {
-            menu.style.display = "none";
-            gameContainer.style.display = "flex";
+    let kemalX = 50;
+    let kemalY = canvas.height / 2;
+    let kemalVelocity = 0;
+    const gravity = 0.5;
+    const jumpStrength = -10;
 
-            snake = [{ x: 200, y: 300 }];
-            direction = { x: 0, y: -20 };
-            food = { x: getRandomPosition(400), y: getRandomPosition(600) };
-            score = 0;
-            scoreDisplay.innerText = score;
+    const pipes = [];
+    const pipeWidth = 50;
+    const pipeGap = 150;
+    const pipeSpeed = 2;
 
-            clearInterval(gameLoop);
-            gameLoop = setInterval(updateGame, 100);
+    let score = 0;
+    let gameRunning = false;
+    let nameAttempts = 0;
+    let playerName = "";
+
+    // Start Game
+    function startGame() {
+      const nameInput = document.getElementById("playerName").value.trim();
+      const warningElement = document.getElementById("warning");
+
+      if (nameInput === "") {
+        nameAttempts++;
+
+        if (nameAttempts === 1) {
+          warningElement.textContent = "Insert player name!";
+        } else if (nameAttempts === 2) {
+          warningElement.textContent = "Name ???";
+        } else if (nameAttempts === 3) {
+          warningElement.textContent = "Trebaju ti naočale, ime dodaj!";
         }
+        return;
+      }
 
-        // Zufällige Position für Essen
-        function getRandomPosition(max) {
-            return Math.floor(Math.random() * (max / 20)) * 20;
+      playerName = nameInput;
+      document.getElementById("main-menu").style.display = "none";
+      canvas.style.display = "block";
+      gameRunning = true;
+      createPipe();
+      gameLoop();
+    }
+
+    // Draw Pixel Bird
+    function drawKemal(x, y) {
+      ctx.fillStyle = "#00FF00"; // Green bird
+      ctx.fillRect(x, y, 20, 20);
+      ctx.fillStyle = "#FFD700"; // Yellow beak
+      ctx.fillRect(x + 15, y + 5, 5, 10);
+      ctx.fillStyle = "#FFFFFF"; // White eye
+      ctx.fillRect(x + 5, y + 5, 5, 5);
+    }
+
+    // Draw Pixel Clouds
+    function drawCloud(x, y) {
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(x, y, 50, 20);
+      ctx.fillRect(x + 15, y - 10, 30, 30);
+      ctx.fillRect(x - 15, y, 20, 20);
+    }
+
+    // Generate Pipes
+    function createPipe() {
+      const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
+      pipes.push({
+        x: canvas.width,
+        topY: 0,
+        bottomY: pipeHeight + pipeGap,
+        height: pipeHeight,
+      });
+    }
+
+    // Main Game Loop
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Background
+      ctx.fillStyle = "#87CEEB";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Clouds
+      drawCloud(50, 100);
+      drawCloud(200, 150);
+      drawCloud(300, 50);
+
+      // Draw Kemal
+      drawKemal(kemalX, kemalY);
+
+      // Apply Gravity
+      kemalVelocity += gravity;
+      kemalY += kemalVelocity;
+
+      // Pipes Logic
+      for (let i = 0; i < pipes.length; i++) {
+        const pipe = pipes[i];
+
+        pipe.x -= pipeSpeed;
+
+        // Draw Pipes
+        ctx.fillStyle = "#008000";
+        ctx.fillRect(pipe.x, pipe.topY, pipeWidth, pipe.height);
+        ctx.fillRect(pipe.x, pipe.bottomY, pipeWidth, canvas.height - pipe.bottomY);
+
+        // Check for Collisions
+        if (
+          kemalX + 20 > pipe.x &&
+          kemalX < pipe.x + pipeWidth &&
+          (kemalY < pipe.height || kemalY + 20 > pipe.bottomY)
+        ) {
+          endGame();
         }
+      }
 
-        // Spiel aktualisieren
-        function updateGame() {
-            // Schlange bewegen
-            const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-            snake.unshift(head);
+      // Remove Off-Screen Pipes
+      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
+        pipes.shift();
+      }
 
-            // Prüfen, ob Essen gefressen wurde
-            if (head.x === food.x && head.y === food.y) {
-                score += 10;
-                scoreDisplay.innerText = score;
-                food = { x: getRandomPosition(400), y: getRandomPosition(600) };
-            } else {
-                snake.pop();
-            }
+      // Create New Pipes
+      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
+        createPipe();
+      }
 
-            // Spiel beenden, wenn Kollision
-            if (checkCollision()) {
-                clearInterval(gameLoop);
-                alert("Igra završena! Bodovi: " + score);
-                menu.style.display = "block";
-                gameContainer.style.display = "none";
-            }
+      // Check for Ground Collision
+      if (kemalY + 20 > canvas.height || kemalY < 0) {
+        endGame();
+      }
 
-            // Spiel rendern
-            renderGame();
-        }
+      // Draw Score
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "20px Arial";
+      ctx.fillText(`Score: ${score}`, 10, 30);
+      ctx.fillText(`Player: ${playerName}`, 10, 50);
 
-        // Kollision prüfen
-        function checkCollision() {
-            const head = snake[0];
-            if (head.x < 0 || head.x >= 400 || head.y < 0 || head.y >= 600) {
-                return true;
-            }
-            for (let i = 1; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) {
-                    return true;
-                }
-            }
-            return false;
-        }
+      requestAnimationFrame(gameLoop);
+    }
 
-        // Spiel rendern
-        function renderGame() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // End Game
+    function endGame() {
+      gameRunning = false;
+      const gameOverDiv = document.createElement("div");
+      gameOverDiv.classList.add("game-over");
+      gameOverDiv.innerHTML = `
+        <p>Game Over!</p>
+        <p>Score: ${score}</p>
+        <button onclick="restartGame()">Restart</button>
+      `;
+      document.body.appendChild(gameOverDiv);
+    }
 
-            // Schlange zeichnen
-            ctx.fillStyle = "#ff6f61";
-            snake.forEach((segment) => {
-                ctx.fillRect(segment.x, segment.y, 20, 20);
-            });
+    // Restart Game
+    function restartGame() {
+      document.querySelector(".game-over").remove();
+      kemalX = 50;
+      kemalY = canvas.height / 2;
+      kemalVelocity = 0;
+      pipes.length = 0;
+      score = 0;
+      gameRunning = true;
+      gameLoop();
+    }
 
-            // Essen zeichnen
-            ctx.fillStyle = "#ffcc00";
-            ctx.fillRect(food.x, food.y, 20, 20);
-        }
-
-        // Steuerung
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -20 };
-            if (e.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 20 };
-            if (e.key === "ArrowLeft" && direction.x === 0) direction = { x: -20, y: 0 };
-            if (e.key === "ArrowRight" && direction.x === 0) direction = { x: 20, y: 0 };
-        });
-    </script>
+    // Tap to Jump (Mobile-Friendly)
+    canvas.addEventListener("touchstart", () => {
+      if (gameRunning) kemalVelocity = jumpStrength;
+    });
+  </script>
 </body>
 </html>
