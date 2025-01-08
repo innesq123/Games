@@ -9,32 +9,30 @@
             font-family: Arial, sans-serif;
             background-color: black;
             color: white;
-            text-align: center;
             margin: 0;
-            padding: 0;
+            text-align: center;
         }
         canvas {
             display: block;
             margin: 20px auto;
-            background-color: #222;
-            border: 3px solid white;
+            background-color: #111;
+            border: 2px solid white;
         }
         .menu, .game-over, .game {
             display: none;
         }
-        .menu button {
+        .menu button, .menu input {
             margin: 10px;
-            padding: 10px 20px;
-            font-size: 20px;
-            cursor: pointer;
+            padding: 10px;
+            font-size: 18px;
         }
         .leaderboard {
-            text-align: center;
+            background: #222;
             margin: 20px auto;
-            width: 300px;
-            background: #333;
-            border-radius: 10px;
             padding: 10px;
+            border-radius: 10px;
+            width: 300px;
+            color: white;
         }
         .leaderboard .rank {
             font-size: 16px;
@@ -48,35 +46,35 @@
 <body>
     <h1>DMG Revolver</h1>
 
-    <!-- Main Menu -->
+    <!-- Hauptmenü -->
     <div class="menu" id="mainMenu">
         <h2>Hauptmenü</h2>
         <label for="playerName">Spielername:</label>
         <input type="text" id="playerName" placeholder="Name eingeben" />
         <br>
         <button onclick="startGame()">Spiel starten</button>
-        <button onclick="showLeaderboard()">Bestenliste</button>
+        <button onclick="showLeaderboard()">Bestenliste anzeigen</button>
     </div>
 
-    <!-- Leaderboard -->
-    <div class="leaderboard" id="leaderboard">
-        <h2>Top-Spieler</h2>
-        <div id="leaderboardList">
+    <!-- Bestenliste -->
+    <div class="menu" id="leaderboard" style="display: none;">
+        <h2>Bestenliste</h2>
+        <div class="leaderboard" id="leaderboardList">
             <p class="rank gold">1. ---</p>
             <p class="rank silver">2. ---</p>
             <p class="rank bronze">3. ---</p>
         </div>
-        <button onclick="backToMenu()">Zurück</button>
+        <button onclick="backToMenu()">Zurück zum Menü</button>
     </div>
 
-    <!-- Game Canvas -->
-    <div class="game" id="gameArea">
+    <!-- Spielbereich -->
+    <div class="game" id="gameArea" style="display: none;">
         <canvas id="gameCanvas" width="600" height="600"></canvas>
-        <p id="score">Punkte: 0</p>
+        <p id="scoreDisplay">Punkte: 0</p>
     </div>
 
     <!-- Game Over -->
-    <div class="game-over" id="gameOver">
+    <div class="menu" id="gameOver" style="display: none;">
         <h2>Spiel vorbei!</h2>
         <p id="finalScore">Dein Punktestand: 0</p>
         <button onclick="backToMenu()">Zurück zum Menü</button>
@@ -85,29 +83,53 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const playerNameInput = document.getElementById('playerName');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const leaderboardList = document.getElementById('leaderboardList');
 
-        let gameState, score, pacMan, ghosts, highScores;
-        let animationId;
-
-        // Initialisieren der Bestenliste
-        highScores = [
+        let gameState;
+        let score;
+        let pacMan;
+        let ghosts;
+        let dots;
+        let highScores = [
             { name: "---", score: 0 },
             { name: "---", score: 0 },
             { name: "---", score: 0 }
         ];
+        let animationId;
 
+        // Initialisiere Spiel
         function resetGame() {
             gameState = 'playing';
             score = 0;
-            pacMan = { x: 300, y: 300, size: 20, speed: 2, direction: 'right', poweredUp: false, poweredUpTime: 0 };
+
+            pacMan = {
+                x: 300,
+                y: 300,
+                size: 20,
+                speed: 2,
+                direction: { x: 0, y: 0 },
+                poweredUp: false,
+                poweredUpTime: 0
+            };
+
             ghosts = [
-                { x: 100, y: 100, speed: 1, direction: 'down', canWalkThroughWalls: true },
-                { x: 500, y: 500, speed: 1, direction: 'up', canWalkThroughWalls: false }
+                { x: 100, y: 100, speed: 1, direction: { x: 1, y: 0 }, canWalkThroughWalls: true },
+                { x: 500, y: 500, speed: 1, direction: { x: -1, y: 0 }, canWalkThroughWalls: false }
             ];
+
+            dots = [];
+            for (let i = 0; i < 20; i++) {
+                for (let j = 0; j < 20; j++) {
+                    dots.push({ x: i * 30 + 15, y: j * 30 + 15, eaten: false });
+                }
+            }
         }
 
         function startGame() {
-            const playerName = document.getElementById('playerName').value.trim();
+            const playerName = playerNameInput.value.trim();
             if (!playerName) {
                 alert("Bitte gib deinen Spielernamen ein!");
                 return;
@@ -116,42 +138,45 @@
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
             resetGame();
-            updateGame();
+            gameLoop();
         }
 
-        function updateGame() {
+        function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Pac-Man aktualisieren
             updatePacMan();
             drawPacMan();
 
-            // Geister aktualisieren und zeichnen
-            ghosts.forEach(updateGhost);
-            ghosts.forEach(drawGhost);
+            updateGhosts();
+            drawGhosts();
 
-            // Punkte aktualisieren und Kollisionen prüfen
+            drawDots();
             checkCollisions();
 
-            document.getElementById('score').textContent = `Punkte: ${score}`;
+            scoreDisplay.textContent = `Punkte: ${score}`;
 
             if (gameState === 'playing') {
-                animationId = requestAnimationFrame(updateGame);
+                animationId = requestAnimationFrame(gameLoop);
             } else {
                 endGame();
             }
         }
 
         function updatePacMan() {
-            if (pacMan.direction === 'right') pacMan.x += pacMan.speed;
-            if (pacMan.direction === 'left') pacMan.x -= pacMan.speed;
-            if (pacMan.direction === 'up') pacMan.y -= pacMan.speed;
-            if (pacMan.direction === 'down') pacMan.y += pacMan.speed;
+            pacMan.x += pacMan.direction.x * pacMan.speed;
+            pacMan.y += pacMan.direction.y * pacMan.speed;
 
             if (pacMan.x < 0) pacMan.x = canvas.width;
             if (pacMan.x > canvas.width) pacMan.x = 0;
             if (pacMan.y < 0) pacMan.y = canvas.height;
             if (pacMan.y > canvas.height) pacMan.y = 0;
+
+            if (pacMan.poweredUp && pacMan.poweredUpTime > 0) {
+                pacMan.poweredUpTime--;
+            } else {
+                pacMan.poweredUp = false;
+                pacMan.speed = 2;
+            }
         }
 
         function drawPacMan() {
@@ -163,29 +188,53 @@
             ctx.fill();
         }
 
-        function updateGhost(ghost) {
-            if (ghost.direction === 'right') ghost.x += ghost.speed;
-            if (ghost.direction === 'left') ghost.x -= ghost.speed;
-            if (ghost.direction === 'up') ghost.y -= ghost.speed;
-            if (ghost.direction === 'down') ghost.y += ghost.speed;
+        function updateGhosts() {
+            ghosts.forEach(ghost => {
+                ghost.x += ghost.direction.x * ghost.speed;
+                ghost.y += ghost.direction.y * ghost.speed;
 
-            if (!ghost.canWalkThroughWalls) {
-                if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
-                    ghost.direction = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+                if (!ghost.canWalkThroughWalls) {
+                    if (ghost.x < 0 || ghost.x > canvas.width || ghost.y < 0 || ghost.y > canvas.height) {
+                        ghost.direction.x = -ghost.direction.x;
+                        ghost.direction.y = -ghost.direction.y;
+                    }
                 }
-            }
+            });
         }
 
-        function drawGhost(ghost) {
-            ctx.fillStyle = 'red';
-            ctx.beginPath();
-            ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
+        function drawGhosts() {
+            ghosts.forEach(ghost => {
+                ctx.fillStyle = 'red';
+                ctx.beginPath();
+                ctx.arc(ghost.x, ghost.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        function drawDots() {
+            dots.forEach(dot => {
+                if (!dot.eaten) {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
         }
 
         function checkCollisions() {
+            dots.forEach(dot => {
+                if (!dot.eaten && Math.hypot(dot.x - pacMan.x, dot.y - pacMan.y) < pacMan.size) {
+                    dot.eaten = true;
+                    score += 100;
+                    if (score % 1000 === 0) {
+                        pacMan.poweredUp = true;
+                        pacMan.poweredUpTime = 180; // 3 Sekunden
+                        pacMan.speed = 4;
+                    }
+                }
+            });
+
             ghosts.forEach(ghost => {
                 if (Math.hypot(ghost.x - pacMan.x, ghost.y - pacMan.y) < pacMan.size + 20) {
                     gameState = 'game-over';
@@ -195,8 +244,7 @@
 
         function endGame() {
             cancelAnimationFrame(animationId);
-            const playerName = document.getElementById('playerName').value.trim();
-            updateHighScores(playerName, score);
+            updateHighScores(playerNameInput.value.trim(), score);
             showGameOverScreen();
         }
 
@@ -209,25 +257,32 @@
         function showGameOverScreen() {
             document.getElementById('gameArea').style.display = 'none';
             document.getElementById('gameOver').style.display = 'block';
-            document.getElementById('finalScore').textContent = `Dein Punktestand: ${score}`;
+            finalScoreDisplay.textContent = `Dein Punktestand: ${score}`;
         }
 
         function showLeaderboard() {
+            const leaderboardHtml = highScores.map((entry, index) => {
+                const medalClass = index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze';
+                return `<p class="rank ${medalClass}">${index + 1}. ${entry.name}: ${entry.score}</p>`;
+            }).join('');
+            leaderboardList.innerHTML = leaderboardHtml;
+
             document.getElementById('mainMenu').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'block';
-            const leaderboardList = document.getElementById('leaderboardList');
-            leaderboardList.innerHTML = highScores.map((player, index) => {
-                const medal = index === 0 ? 'gold' : index === 1 ? 'silver' : 'bronze';
-                return `<p class="rank ${medal}">${index + 1}. ${player.name} (${player.score})</p>`;
-            }).join('');
         }
 
         function backToMenu() {
-            document.getElementById('gameArea').style.display = 'none';
             document.getElementById('gameOver').style.display = 'none';
             document.getElementById('leaderboard').style.display = 'none';
             document.getElementById('mainMenu').style.display = 'block';
         }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') pacMan.direction = { x: 0, y: -1 };
+            if (e.key === 'ArrowDown') pacMan.direction = { x: 0, y: 1 };
+            if (e.key === 'ArrowLeft') pacMan.direction = { x: -1, y: 0 };
+            if (e.key === 'ArrowRight') pacMan.direction = { x: 1, y: 0 };
+        });
     </script>
 </body>
 </html>
