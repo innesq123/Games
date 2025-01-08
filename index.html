@@ -18,37 +18,102 @@
       background: #87CEEB; /* Himmelblauer Hintergrund */
     }
 
-    #start-overlay {
+    .menu {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 36px;
-      color: rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      text-align: center;
+      padding: 20px;
+      border-radius: 10px;
       display: none;
+      width: 300px;
+    }
+
+    .menu.active {
+      display: block;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #218838;
+    }
+
+    .leaderboard {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    .leaderboard h3 {
+      margin: 0;
+    }
+
+    .leaderboard ul {
+      list-style: none;
+      padding: 0;
+      margin: 10px 0 0;
+    }
+
+    .leaderboard li {
+      margin: 5px 0;
     }
   </style>
 </head>
 <body>
-  <div id="start-overlay">Tippe zum Starten</div>
+  <!-- Hauptmenü -->
+  <div id="main-menu" class="menu active">
+    <h1>Adisova Igra - Kemal</h1>
+    <button onclick="startGame()">Start</button>
+    <div class="leaderboard">
+      <h3>Bestenliste</h3>
+      <ul id="leaderboard"></ul>
+    </div>
+  </div>
+
+  <!-- Game Over Menü -->
+  <div id="game-over-menu" class="menu">
+    <h2>Game Over</h2>
+    <p>Score: <span id="final-score"></span></p>
+    <button onclick="restartGame()">Retry</button>
+    <button onclick="openMainMenu()">Main Menu</button>
+  </div>
+
+  <!-- Spielfläche -->
   <canvas id="gameCanvas" width="400" height="600"></canvas>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // Vogel-Design (Pixel-Art)
-    const birdSprites = [
-      { x: 0, y: 0 }, // Flügel oben
-      { x: 34, y: 0 }, // Flügel neutral
-      { x: 68, y: 0 }, // Flügel unten
+    const birdPixels = [
+      // Pixel-Design für den Vogel
+      [0, 1, 1, 0],
+      [1, 2, 2, 1],
+      [2, 3, 3, 2],
+      [1, 2, 3, 1],
     ];
 
     const birdWidth = 34;
     const birdHeight = 24;
 
-    const sprite = new Image();
-    sprite.src = "https://your-bird-sprite-url.png"; // Ersetze mit deinem Spritesheet
+    const colors = {
+      0: "#87CEEB", // Himmelblau
+      1: "green",   // Vogelkörper
+      2: "white",   // Augen
+      3: "blue",    // Blaue Stirn
+    };
 
     let birdX = 50;
     let birdY = canvas.height / 2;
@@ -56,32 +121,59 @@
     const gravity = 0.4;
     const jumpForce = -8;
 
-    let frameIndex = 0;
     let gameRunning = false;
     let gameStarted = false;
-    const startOverlay = document.getElementById("start-overlay");
+
+    const leaderboardList = document.getElementById("leaderboard");
+    const mainMenu = document.getElementById("main-menu");
+    const gameOverMenu = document.getElementById("game-over-menu");
+    const finalScore = document.getElementById("final-score");
+
+    // Bestenliste abrufen (API muss implementiert werden)
+    async function getLeaderboard() {
+      const response = await fetch("https://example.com/api/leaderboard");
+      const leaderboard = await response.json();
+      leaderboardList.innerHTML = leaderboard
+        .map((entry) => `<li>${entry.name}: ${entry.score}</li>`)
+        .join("");
+    }
+
+    // Bestenliste speichern
+    async function saveScore(name, score) {
+      await fetch("https://example.com/api/leaderboard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, score }),
+      });
+      getLeaderboard();
+    }
 
     // Vogel zeichnen
     function drawBird() {
-      const frame = birdSprites[frameIndex];
-      ctx.drawImage(
-        sprite,
-        frame.x,
-        frame.y,
-        birdWidth,
-        birdHeight,
-        birdX,
-        birdY,
-        birdWidth,
-        birdHeight
-      );
+      birdPixels.forEach((row, y) => {
+        row.forEach((pixel, x) => {
+          if (pixel !== 0) {
+            ctx.fillStyle = colors[pixel];
+            ctx.fillRect(
+              birdX + x * (birdWidth / birdPixels[0].length),
+              birdY + y * (birdHeight / birdPixels.length),
+              birdWidth / birdPixels[0].length,
+              birdHeight / birdPixels.length
+            );
+          }
+        });
+      });
     }
 
-    // Spiel-Logik
+    // Spielmechanik
     function gameLoop() {
+      if (!gameRunning) return;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Vogel-Schwerkraft
+      // Vogel-Logik
       if (gameStarted) {
         birdVelocity += gravity;
         birdY += birdVelocity;
@@ -90,34 +182,47 @@
       // Vogel zeichnen
       drawBird();
 
-      // Animation frame ändern
-      if (gameRunning) {
-        frameIndex = (frameIndex + 1) % birdSprites.length;
-      }
-
       requestAnimationFrame(gameLoop);
     }
 
-    // Spiel starten
     function startGame() {
-      gameStarted = true;
-      startOverlay.style.display = "none";
+      mainMenu.classList.remove("active");
+      birdY = canvas.height / 2;
+      birdVelocity = 0;
+      gameRunning = true;
+      gameStarted = false;
+      gameLoop();
     }
 
     canvas.addEventListener("click", () => {
       if (!gameStarted) {
-        startGame();
+        gameStarted = true;
+        return;
       }
       birdVelocity = jumpForce;
     });
 
-    // Starte die Schleife
-    sprite.onload = () => {
-      gameLoop();
-    };
+    async function endGame(score) {
+      const playerName = prompt("Name eingeben:");
+      if (playerName) {
+        await saveScore(playerName, score);
+      }
+      gameRunning = false;
+      finalScore.textContent = score;
+      gameOverMenu.classList.add("active");
+    }
 
-    // Overlay sichtbar machen
-    startOverlay.style.display = "block";
+    function restartGame() {
+      gameOverMenu.classList.remove("active");
+      startGame();
+    }
+
+    function openMainMenu() {
+      gameOverMenu.classList.remove("active");
+      mainMenu.classList.add("active");
+    }
+
+    getLeaderboard();
   </script>
 </body>
 </html>
