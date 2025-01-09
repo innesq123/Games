@@ -1,227 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Bird Clone</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background-color: #87CEEB;
-      overflow: hidden;
-    }
-
-    canvas {
-      display: block;
-      margin: 0 auto;
-      background: #87CEEB; /* Himmelblauer Hintergrund */
-    }
-
-    .menu {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      text-align: center;
-      padding: 20px;
-      border-radius: 10px;
-      display: none;
-      width: 300px;
-    }
-
-    .menu.active {
-      display: block;
-    }
-
-    button {
-      margin: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      border: none;
-      background: #28a745;
-      color: white;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #218838;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book of Ra Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #222;
+            color: #fff;
+        }
+        .reels {
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+        }
+        .reel {
+            width: 100px;
+            height: 100px;
+            margin: 5px;
+            border: 2px solid #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            background-color: #000;
+            animation: spin 0.5s ease-out;
+        }
+        @keyframes spin {
+            0% { transform: rotateX(0); }
+            50% { transform: rotateX(180deg); }
+            100% { transform: rotateX(360deg); }
+        }
+        .controls {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 5px;
+        }
+        input {
+            width: 50px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-  <!-- Hauptmenü -->
-  <div id="main-menu" class="menu active">
-    <h1>Flappy Bird Clone</h1>
-    <button onclick="startGame()">Start</button>
-  </div>
-
-  <!-- Spielfläche -->
-  <canvas id="gameCanvas" width="400" height="600"></canvas>
-
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-
-    // Pixel-genauer Vogel, basierend auf deinem neuen 2D-Array
-    const birdPixels = [
-      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 1, 1, 4, 4, 4, 4, 1, 1, 0, 0, 0],
-      [0, 0, 0, 1, 4, 5, 5, 5, 5, 1, 2, 1, 0, 0, 0],
-      [0, 0, 1, 5, 5, 5, 5, 5, 1, 2, 1, 2, 1, 0, 0],
-      [0, 1, 5, 5, 5, 5, 5, 5, 1, 2, 2, 1, 0, 0, 0],
-      [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-      [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
-    ];
-
-    const colors = {
-      0: "#87CEEB", // Blau (Hintergrund)
-      1: "#000000", // Schwarz (Kontur)
-      2: "#FFFFFF", // Weiß
-      3: "#FFA500", // Orange
-      4: "#ADD8E6", // Hellblau
-      5: "#008000", // Grün
-    };
-
-    const birdWidth = 30; // Kleinere Größe
-    const birdHeight = 24;
-
-    let birdX = 50;
-    let birdY = canvas.height / 2;
-    let birdVelocity = 0;
-    const gravity = 0.4;
-    const jumpForce = -6;
-
-    let pipes = [];
-    const pipeWidth = 40;
-    const pipeGap = 120;
-    const pipeSpeed = 2;
-
-    let score = 0;
-    let gameRunning = false;
-    let gameStarted = false;
-
-    // Vogel zeichnen
-    function drawBird() {
-      birdPixels.forEach((row, y) => {
-        row.forEach((pixel, x) => {
-          if (pixel !== 0) {
-            ctx.fillStyle = colors[pixel];
-            ctx.fillRect(
-              birdX + x * (birdWidth / birdPixels[0].length),
-              birdY + y * (birdHeight / birdPixels.length),
-              birdWidth / birdPixels[0].length,
-              birdHeight / birdPixels.length
-            );
-          }
-        });
-      });
-    }
-
-    // Hindernisse erstellen
-    function createPipe() {
-      const pipeHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
-      pipes.push({ x: canvas.width, topHeight: pipeHeight });
-    }
-
-    // Hindernisse zeichnen
-    function drawPipes() {
-      ctx.fillStyle = "green";
-      pipes.forEach((pipe) => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.topHeight);
-        ctx.fillRect(pipe.x, pipe.topHeight + pipeGap, pipeWidth, canvas.height - pipe.topHeight - pipeGap);
-      });
-    }
-
-    // Hindernisse bewegen
-    function movePipes() {
-      pipes.forEach((pipe) => {
-        pipe.x -= pipeSpeed;
-      });
-      if (pipes.length > 0 && pipes[0].x + pipeWidth < 0) {
-        pipes.shift();
-        score++;
-      }
-      if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) {
-        createPipe();
-      }
-    }
-
-    // Spiel-Logik
-    function gameLoop() {
-      if (!gameRunning) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Hindernisse bewegen und zeichnen
-      movePipes();
-      drawPipes();
-
-      // Vogel-Schwerkraft
-      if (gameStarted) {
-        birdVelocity += gravity;
-        birdY += birdVelocity;
-      }
-
-      // Vogel zeichnen
-      drawBird();
-
-      // Kollisionserkennung
-      if (birdY + birdHeight > canvas.height || birdY < 0) {
-        endGame();
-      }
-
-      pipes.forEach((pipe) => {
-        if (
-          birdX < pipe.x + pipeWidth &&
-          birdX + birdWidth > pipe.x &&
-          (birdY < pipe.topHeight || birdY + birdHeight > pipe.topHeight + pipeGap)
-        ) {
-          endGame();
-        }
-      });
-
-      // Score anzeigen
-      ctx.fillStyle = "white";
-      ctx.font = "20px Arial";
-      ctx.fillText(`Score: ${score}`, 10, 30);
-
-      requestAnimationFrame(gameLoop);
-    }
-
-    // Spiel starten
-    function startGame() {
-      const mainMenu = document.getElementById("main-menu");
-      mainMenu.classList.remove("active");
-      birdY = canvas.height / 2;
-      birdVelocity = 0;
-      pipes = [];
-      score = 0;
-      gameRunning = true;
-      gameStarted = false;
-      createPipe();
-      gameLoop();
-    }
-
-    function endGame() {
-      gameRunning = false;
-      alert(`Game Over! Dein Score: ${score}`);
-      const mainMenu = document.getElementById("main-menu");
-      mainMenu.classList.add("active");
-    }
-
-    canvas.addEventListener("click", () => {
-      if (!gameStarted) {
-        gameStarted = true;
-        return;
-      }
-      birdVelocity = jumpForce;
-    });
-  </script>
+    <h1>Book of Ra - Clone</h1>
+    <div class="reels">
+        <div class="reel" id="reel1">?</div>
+        <div class="reel" id="reel2">?</div>
+        <div class="reel" id="reel3">?</div>
+    </div>
+    <div class="controls">
+        <label for="bet">Einsatz: </label>
+        <input type="number" id="bet" value="10" min="1" max="100">
+        <button id="spinButton">Spin</button>
+    </div>
+    <p id="balance">Guthaben: 1000</p>
+    <p id="result"></p>
+    <script src="script.js"></script>
 </body>
 </html>
