@@ -1,66 +1,81 @@
-// Symbole
+// Spiellogik
 const symbols = ["🇧🇦", "🥃", "💎", "🚼", "1️⃣6️⃣"];
 let balance = 1000;
-let freeSpins = 0;
-let multiplier = 1;
-let selectedBet = 5;
+let selectedBet = 0;
 
-// Hintergrundmusik
-const backgroundMusic = document.getElementById("backgroundMusic");
-backgroundMusic.volume = 0.05;
-backgroundMusic.play();
+// HTML-Elemente
+const balanceDisplay = document.getElementById("balance");
+const resultDisplay = document.getElementById("result");
+const spinButton = document.getElementById("spinButton");
+const reels = [
+    document.getElementById("reel1"),
+    document.getElementById("reel2"),
+    document.getElementById("reel3"),
+    document.getElementById("reel4"),
+    document.getElementById("reel5"),
+    document.getElementById("reel6"),
+];
 
-// Gewinne anzeigen
-function displayWinningLines(lines) {
-    const winningLinesContainer = document.querySelector(".winning-lines");
-    winningLinesContainer.innerHTML = "";
-
-    lines.forEach((line) => {
-        const lineElement = document.createElement("div");
-        lineElement.classList.add("line");
-        lineElement.style.top = `${line.top}%`;
-        lineElement.style.left = `${line.left}%`;
-        lineElement.style.height = `${line.height}px`;
-        lineElement.style.width = `${line.width}px`;
-        winningLinesContainer.appendChild(lineElement);
+// Einsatz wählen
+document.querySelectorAll(".bet-selector button").forEach((button) => {
+    button.addEventListener("click", () => {
+        selectedBet = parseInt(button.getAttribute("data-bet"));
+        resultDisplay.textContent = `Einsatz: ${selectedBet}`;
+        spinButton.disabled = false;
     });
+});
+
+// Symbole zufällig auswählen
+function getRandomSymbol() {
+    return symbols[Math.floor(Math.random() * symbols.length)];
 }
 
-// Funktion: Gewinne überprüfen
-function checkWins(reels) {
-    const lines = [];
-    const winnings = 0;
+// Gewinnlogik überprüfen
+function checkWins(reelResults) {
+    let win = 0;
+    const topRow = [reelResults[0], reelResults[1], reelResults[2]];
+    const bottomRow = [reelResults[3], reelResults[4], reelResults[5]];
 
-    // Beispiel: Horizontale Linienprüfung
-    if (reels[0] === reels[1] && reels[1] === reels[2]) {
-        winnings += selectedBet * 10; // 10x Gewinn für 3 gleiche Symbole
+    // Top-Reihe prüfen
+    if (topRow[0] === topRow[1] && topRow[1] === topRow[2]) {
+        win = selectedBet * 10;
     }
 
-    // Weitere Gewinnlogik hier einfügen ...
+    // Bottom-Reihe prüfen
+    if (bottomRow[0] === bottomRow[1] && bottomRow[1] === bottomRow[2]) {
+        win = selectedBet * 5;
+    }
 
-    displayWinningLines(lines);
-    return winnings;
+    return win;
 }
 
-// Spin-Funktion
+// Rollen drehen
 function spinReels() {
-    const reels = [];
-
-    for (let i = 0; i < 6; i++) {
-        reels.push(symbols[Math.floor(Math.random() * symbols.length)]);
+    if (balance < selectedBet) {
+        resultDisplay.textContent = "Nicht genug Guthaben!";
+        return;
     }
 
-    document.getElementById("reel1").textContent = reels[0];
-    document.getElementById("reel2").textContent = reels[1];
-    document.getElementById("reel3").textContent = reels[2];
-    document.getElementById("reel4").textContent = reels[3];
-    document.getElementById("reel5").textContent = reels[4];
-    document.getElementById("reel6").textContent = reels[5];
+    balance -= selectedBet;
+    balanceDisplay.textContent = `Guthaben: ${balance}`;
 
-    const winnings = checkWins(reels);
-    balance += winnings;
-    document.getElementById("balance").textContent = `Guthaben: ${balance}`;
+    const reelResults = reels.map(() => getRandomSymbol());
+
+    reels.forEach((reel, index) => {
+        reel.textContent = reelResults[index];
+    });
+
+    const win = checkWins(reelResults);
+
+    if (win > 0) {
+        balance += win;
+        resultDisplay.textContent = `Gewinn: ${win}`;
+    } else {
+        resultDisplay.textContent = "Kein Gewinn!";
+    }
+
+    balanceDisplay.textContent = `Guthaben: ${balance}`;
 }
 
-// Event-Listener für Spin
-document.getElementById("spinButton").addEventListener("click", spinReels);
+// Spin-Button
+spinButton.addEventListener("click", spinReels);
