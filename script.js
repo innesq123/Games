@@ -1,85 +1,54 @@
-// Spielfunktionen und Gewinnlogik
+// Symbole
 const symbols = ["🇧🇦", "🥃", "💎", "🚼", "1️⃣6️⃣"];
 let balance = 1000;
 let freeSpins = 0;
 let multiplier = 1;
+let selectedBet = 5;
 
-// Sound: Hintergrundmusik
+// Hintergrundmusik
 const backgroundMusic = document.getElementById("backgroundMusic");
-backgroundMusic.volume = 0.05; // Leiser als Gewinnsounds
+backgroundMusic.volume = 0.05;
 backgroundMusic.play();
 
-// Sound: Gewinnton
-function playWinSound(frequency) {
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
-    oscillator.connect(audioContext.destination);
-    oscillator.start();
-    setTimeout(() => oscillator.stop(), 200);
+// Gewinne anzeigen
+function displayWinningLines(lines) {
+    const winningLinesContainer = document.querySelector(".winning-lines");
+    winningLinesContainer.innerHTML = "";
+
+    lines.forEach((line) => {
+        const lineElement = document.createElement("div");
+        lineElement.classList.add("line");
+        lineElement.style.top = `${line.top}%`;
+        lineElement.style.left = `${line.left}%`;
+        lineElement.style.height = `${line.height}px`;
+        lineElement.style.width = `${line.width}px`;
+        winningLinesContainer.appendChild(lineElement);
+    });
 }
 
-// Zufälliges Symbol auswählen
-function getRandomSymbol() {
-    return symbols[Math.floor(Math.random() * symbols.length)];
-}
+// Funktion: Gewinne überprüfen
+function checkWins(reels) {
+    const lines = [];
+    const winnings = 0;
 
-// Gewinn überprüfen
-function checkWin(reels, bet) {
-    const resultText = document.getElementById("result");
-    let win = 0;
-
-    // Gewinnlogik für horizontale und V-Form-Gewinne
+    // Beispiel: Horizontale Linienprüfung
     if (reels[0] === reels[1] && reels[1] === reels[2]) {
-        if (reels[0] === "1️⃣6️⃣") {
-            freeSpins += 16;
-            multiplier = 3;
-            resultText.textContent = `du bist nach wien gefahren für eine 16 jährige 16FREISPIELE FÜR DICH!`;
-        } else if (reels[0] === "🥃") {
-            freeSpins += 1;
-            multiplier = 0.1;
-            resultText.textContent = `OH NEIN du hast im Bogart zu viel Jacky Bull getrunken und eine Volljährige angebaggert 1 strafrunde mit x0,1!`;
-        } else {
-            win = bet * 10;
-            resultText.textContent = `JACKPOT! du kannst nun deinen DPF tauschen! ${win}`;
-        }
-    } else if (reels[0] === reels[1] || reels[1] === reels[2]) {
-        win = bet * 2;
-        resultText.textContent = `Kleiner Gewinn! "das sind 3 gratis vodka bull wenn man das so rechnet! ${win}`;
-    } else {
-        resultText.textContent = "Kein Gewinn du bastard.";
+        winnings += selectedBet * 10; // 10x Gewinn für 3 gleiche Symbole
     }
 
-    balance += win * multiplier;
-    document.getElementById("balance").textContent = `Guthaben: ${balance}`;
-    return win > 0;
+    // Weitere Gewinnlogik hier einfügen ...
+
+    displayWinningLines(lines);
+    return winnings;
 }
 
 // Spin-Funktion
 function spinReels() {
-    if (balance <= 0) {
-        document.getElementById("result").textContent = "Kein Guthaben mehr! Du musst styropor zermalmen mit Rade!";
-        return;
+    const reels = [];
+
+    for (let i = 0; i < 6; i++) {
+        reels.push(symbols[Math.floor(Math.random() * symbols.length)]);
     }
-
-    const bet = parseInt(document.getElementById("bet").value);
-    if (bet > balance) {
-        document.getElementById("result").textContent = "Nicht genug Guthaben! du musst Jaruska oder deine Oma um geld bitten";
-        return;
-    }
-
-    balance -= bet;
-    document.getElementById("balance").textContent = `Guthaben: ${balance}`;
-
-    const reels = [
-        getRandomSymbol(),
-        getRandomSymbol(),
-        getRandomSymbol(),
-        getRandomSymbol(),
-        getRandomSymbol(),
-        getRandomSymbol(),
-    ];
 
     document.getElementById("reel1").textContent = reels[0];
     document.getElementById("reel2").textContent = reels[1];
@@ -88,9 +57,10 @@ function spinReels() {
     document.getElementById("reel5").textContent = reels[4];
     document.getElementById("reel6").textContent = reels[5];
 
-    // Gewinne überprüfen
-    checkWin([reels[0], reels[1], reels[2]], bet);
+    const winnings = checkWins(reels);
+    balance += winnings;
+    document.getElementById("balance").textContent = `Guthaben: ${balance}`;
 }
 
-// Button-Event
+// Event-Listener für Spin
 document.getElementById("spinButton").addEventListener("click", spinReels);
