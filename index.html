@@ -7,7 +7,7 @@
     <style>
         /* Allgemeines Styling */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             background-color: #1e1e1e;
             color: #f5f5f5;
             margin: 0;
@@ -18,24 +18,25 @@
         }
 
         h1 {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: #ffd700;
-            margin: 10px 0;
+            margin: 20px 0;
         }
 
         .game-container {
             width: 100%;
-            max-width: 480px;
+            max-width: 600px;
             padding: 10px;
         }
 
         .reels-container {
             position: relative;
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-gap: 10px;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
             background: linear-gradient(to bottom, #333, #111);
-            border: 2px solid #ffd700;
+            border: 3px solid #ffd700;
             border-radius: 10px;
             padding: 10px;
             box-sizing: border-box;
@@ -50,6 +51,12 @@
             border-radius: 5px;
             border: 2px solid #444;
             color: #ffd700;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+
+        .highlight {
+            background-color: #ffd700;
+            color: #000;
         }
 
         .controls {
@@ -106,18 +113,72 @@
             font-size: 1rem;
             color: #ffd700;
         }
+
+        #infoButton {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 1rem;
+            background-color: #444;
+            color: #ffd700;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #infoButton:hover {
+            background-color: #666;
+        }
+
+        .info-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background-color: #222;
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 20px;
+            color: #fff;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .info-container button {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #444;
+            color: #ffd700;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .info-container button:hover {
+            background-color: #666;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
     </style>
 </head>
 <body>
     <h1>🥃 BOOK OF IGOR 🥃</h1>
     <div class="game-container">
-        <div class="reels-container">
-            <div class="reel" id="reel1">?</div>
-            <div class="reel" id="reel2">?</div>
-            <div class="reel" id="reel3">?</div>
-            <div class="reel" id="reel4">?</div>
-            <div class="reel" id="reel5">?</div>
-            <div class="reel" id="reel6">?</div>
+        <div class="reels-container" id="reelsContainer">
+            <!-- Dynamische Kästen -->
         </div>
         <div class="controls">
             <div class="bet-selector">
@@ -130,6 +191,16 @@
         </div>
         <p id="balance">Guthaben: 1000</p>
         <p id="result">Wähle einen Einsatz!</p>
+        <button id="infoButton">ℹ️ Info</button>
+    </div>
+    <div class="overlay" id="overlay"></div>
+    <div class="info-container" id="infoContainer">
+        <p>Das Spiel enthält 20 Slots. Gewinne entstehen durch:</p>
+        <ul>
+            <li>3 gleiche Symbole horizontal</li>
+            <li>Komplexe Verbindungen wie "V" oder "^"</li>
+        </ul>
+        <button id="closeInfo">Schließen</button>
     </div>
     <script src="script.js"></script>
 </body>
