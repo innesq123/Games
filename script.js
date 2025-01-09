@@ -1,8 +1,8 @@
 // Array mit Symbolen
-const symbols = ["🍒", "⭐", "🔔", "🍋", "🎰"];
+const symbols = ["🍒", "⭐", "🖕🏼", "🇧🇦", "🎰"];
 
 // Spielerstatus
-let balance = 1000;
+let balance = 2009;
 
 // Sound-Effekte erstellen
 function playSound(frequency) {
@@ -28,7 +28,7 @@ function spinReels() {
 
     // Überprüfen, ob der Einsatz gültig ist
     if (bet > balance) {
-        resultText.textContent = "Nicht genügend Guthaben!";
+        resultText.textContent = "Nicht genügend Guthaben! du musst dein Vater um Geld bitten";
         return;
     }
 
@@ -70,14 +70,14 @@ function checkWin(r1, r2, r3, bet) {
 
     if (r1 === r2 && r2 === r3) {
         win = bet * 10; // Jackpot: 10x Einsatz
-        resultText.textContent = "JACKPOT! 🎉 Du gewinnst " + win;
+        resultText.textContent = "JACKPOT! du kannst teile für deine e klasse kaufen " + win;
         playSound(600);
     } else if (r1 === r2 || r2 === r3 || r1 === r3) {
         win = bet * 2; // 2x Einsatz
-        resultText.textContent = "Kleiner Gewinn! Du gewinnst " + win;
+        resultText.textContent = "Kleiner Gewinn! Du kannst dir in bogart ein jacky bull kaufen " + win;
         playSound(400);
     } else {
-        resultText.textContent = "Kein Gewinn. Versuch's nochmal!";
+        resultText.textContent = "Kein Gewinn. Du PIC!";
     }
 
     // Guthaben aktualisieren
