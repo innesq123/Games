@@ -4,17 +4,16 @@ const ctx = canvas.getContext("2d");
 // Symbole und Auszahlungen
 const symbols = ["🍒", "🔔", "⭐", "💰", "📚", "🪙", "⚜️", "🪞"];
 const payouts = {
-    "🍒": [0.5, 2, 5],
-    "🔔": [1, 3, 10],
-    "⭐": [1.5, 5, 15],
-    "💰": [2, 7, 20],
-    "📚": [2.5, 10, 25],
-    "🪙": [3, 12, 30],
-    "⚜️": [4, 15, 50],
-    "🪞": [5, 20, 75],
+    "🍒": [0.5, 2, 5, 20, 50],
+    "🔔": [1, 3, 10, 25, 75],
+    "⭐": [1.5, 5, 15, 50, 100],
+    "💰": [2, 7, 20, 75, 150],
+    "📚": [2.5, 10, 25, 100, 200],
+    "🪙": [3, 12, 30, 150, 300],
+    "⚜️": [4, 15, 50, 200, 400],
+    "🪞": [5, 20, 75, 300, 500],
 };
 
-// Slot-Grid-Konfiguration
 const rows = 3;
 const cols = 5;
 const slotSize = 100;
@@ -48,7 +47,7 @@ function initializeSlots() {
 }
 
 // Slots zeichnen
-function drawSlots() {
+function drawSlots(highlighted = []) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const xOffset = (canvas.width - cols * slotSize) / 2;
@@ -59,8 +58,12 @@ function drawSlots() {
             const x = xOffset + col * slotSize;
             const y = yOffset + row * slotSize;
 
-            // Slot-Hintergrund
-            ctx.fillStyle = "#333";
+            // Highlight gewinnender Felder
+            if (highlighted.includes(`${col}-${row}`)) {
+                ctx.fillStyle = "gold";
+            } else {
+                ctx.fillStyle = "#333";
+            }
             ctx.fillRect(x, y, slotSize - 5, slotSize - 5);
 
             // Symbol
@@ -99,7 +102,7 @@ function spin() {
         drawSlots();
 
         frame++;
-        if (frame > 20) {
+        if (frame > 40) { // Längere Animation
             clearInterval(spinInterval);
             calculateWin();
         }
@@ -118,21 +121,52 @@ function calculateWin() {
     }
 
     winAmount = 0;
+    let winLevel = "";
+
     for (const [symbol, count] of Object.entries(symbolCounts)) {
         if (count >= 3) {
-            const payout = payouts[symbol][count - 3] * currentBet;
-            winAmount += payout;
+            const chance = Math.random() * 100;
+
+            if (chance <= 2) {
+                winAmount += payouts[symbol][4] * currentBet; // JACKPOTT
+                winLevel = "Jackpott!";
+            } else if (chance <= 7) {
+                winAmount += payouts[symbol][3] * currentBet; // RIESEN GEWINN
+                winLevel = "Riesen Gewinn!";
+            } else if (chance <= 25) {
+                winAmount += payouts[symbol][2] * currentBet; // GROßER GEWINN
+                winLevel = "Großer Gewinn!";
+            } else if (chance <= 43) {
+                winAmount += payouts[symbol][1] * currentBet; // GEWINN
+                winLevel = "Gewinn!";
+            } else {
+                winAmount += payouts[symbol][0] * currentBet; // KLEINER GEWINN
+                winLevel = "Kleiner Gewinn!";
+            }
         }
     }
 
     balance += winAmount;
     updateUI();
+    displayWinMessage(winLevel);
 }
 
 // UI aktualisieren
 function updateUI() {
     document.getElementById("balance").textContent = balance.toFixed(2);
     document.getElementById("winAmount").textContent = winAmount.toFixed(2);
+}
+
+// Gewinnmeldung anzeigen
+function displayWinMessage(message) {
+    const winMessage = document.getElementById("winMessage");
+    winMessage.textContent = message;
+    winMessage.style.color = "gold";
+    winMessage.style.fontSize = "24px";
+
+    setTimeout(() => {
+        winMessage.textContent = "";
+    }, 3000);
 }
 
 // Einsatz ändern
