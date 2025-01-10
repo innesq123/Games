@@ -4,179 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🥃 Book of Igor 🥃</title>
-    <style>
-        body {
-            margin: 0;
-            background-color: black;
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        canvas {
-            border: 5px solid gold;
-            background-color: #222;
-        }
-
-        .controls {
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .controls span {
-            color: gold;
-            font-size: 20px;
-            margin: 0 10px;
-        }
-
-        .button {
-            background-color: gold;
-            color: black;
-            border: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 0 10px;
-        }
-
-        .button:hover {
-            background-color: darkorange;
-        }
-
-        select {
-            padding: 5px;
-            font-size: 18px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="slotCanvas" width="800" height="600"></canvas>
+    <canvas id="slotCanvas" width="900" height="600"></canvas>
     <div class="controls">
-        <span>Guthaben: <span id="balance">250</span> €</span>
-        <span>Einsatz:</span>
-        <select id="betAmount">
-            <option value="0.2">0,20 €</option>
-            <option value="0.5">0,50 €</option>
-            <option value="0.8">0,80 €</option>
-            <option value="1">1,00 €</option>
-            <option value="2">2,00 €</option>
-            <option value="4">4,00 €</option>
-            <option value="5">5,00 €</option>
-        </select>
-        <button class="button" onclick="spin()">🎰 Spin 🎰</button>
+        <div>
+            <span>Guthaben: <span id="balance">250</span> €</span>
+        </div>
+        <div>
+            <span>Einsatz:</span>
+            <select id="betAmount">
+                <option value="0.2">0,20 €</option>
+                <option value="0.5">0,50 €</option>
+                <option value="0.8">0,80 €</option>
+                <option value="1">1,00 €</option>
+                <option value="2">2,00 €</option>
+                <option value="4">4,00 €</option>
+                <option value="5">5,00 €</option>
+            </select>
+        </div>
+        <div>
+            <button id="spinButton" class="button">🎰 Spin 🎰</button>
+        </div>
+        <div>
+            <span>Gewinn: <span id="winAmount">0.00</span> €</span>
+        </div>
     </div>
-
-    <script>
-        const canvas = document.getElementById("slotCanvas");
-        const ctx = canvas.getContext("2d");
-
-        const symbols = ["🍒", "🔔", "⭐", "💰", "📚", "🪙", "🪞", "⚜️"]; // Mehr Symbole
-        const reels = [[], [], [], [], []];
-        const rows = 3;
-        const cols = 5;
-        const slotSize = 100;
-        const spinSpeed = 50; // Animation Geschwindigkeit
-        let balance = 250;
-
-        // Slots initialisieren
-        function initializeSlots() {
-            for (let col = 0; col < cols; col++) {
-                reels[col] = Array.from({ length: rows }, randomSymbol);
-            }
-            drawSlots();
-        }
-
-        function randomSymbol() {
-            return symbols[Math.floor(Math.random() * symbols.length)];
-        }
-
-        // Slots zeichnen
-        function drawSlots() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = "gold";
-            ctx.lineWidth = 5;
-            ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-            for (let col = 0; col < cols; col++) {
-                for (let row = 0; row < rows; row++) {
-                    const x = col * slotSize + 150;
-                    const y = row * slotSize + 150;
-
-                    ctx.fillStyle = "#333";
-                    ctx.fillRect(x, y, slotSize, slotSize);
-
-                    ctx.fillStyle = "white";
-                    ctx.font = "bold 40px Arial";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(reels[col][row], x + slotSize / 2, y + slotSize / 2);
-                }
-            }
-
-            // Titel
-            ctx.fillStyle = "gold";
-            ctx.font = "bold 40px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("🥃 BOOK OF IGOR 🥃", canvas.width / 2, 50);
-        }
-
-        // Animation des Spins
-        function spinAnimation(callback) {
-            let frame = 0;
-            const interval = setInterval(() => {
-                for (let col = 0; col < cols; col++) {
-                    reels[col] = reels[col].map(() => randomSymbol());
-                }
-                drawSlots();
-
-                frame++;
-                if (frame > 20) {
-                    clearInterval(interval);
-                    callback();
-                }
-            }, spinSpeed);
-        }
-
-        // Spin-Logik
-        function spin() {
-            const bet = parseFloat(document.getElementById("betAmount").value);
-            if (balance < bet) {
-                alert("Nicht genug Guthaben!");
-                return;
-            }
-
-            balance -= bet;
-            updateBalance();
-
-            spinAnimation(() => {
-                checkWin(bet);
-            });
-        }
-
-        // Gewinn prüfen (einfacher Beispielalgorithmus)
-        function checkWin(bet) {
-            const win = Math.random() > 0.7 ? bet * 5 : 0; // 30% Gewinnchance
-            balance += win;
-            updateBalance();
-
-            if (win > 0) {
-                alert(`Du hast ${win.toFixed(2)} € gewonnen!`);
-            }
-        }
-
-        function updateBalance() {
-            document.getElementById("balance").textContent = balance.toFixed(2);
-        }
-
-        initializeSlots();
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
