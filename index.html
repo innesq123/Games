@@ -7,30 +7,33 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="slotCanvas"></canvas>
-    <div class="controls">
-        <div>
-            <span>Guthaben: <span id="balance">250</span> €</span>
+    <div class="background"></div>
+    <div class="game-container">
+        <canvas id="slotCanvas"></canvas>
+        <div class="controls">
+            <div>
+                <span class="info">Guthaben: <span id="balance">250</span> €</span>
+            </div>
+            <div>
+                <span class="info">Einsatz:</span>
+                <select id="betAmount" class="styled-select">
+                    <option value="0.2">0,20 €</option>
+                    <option value="0.5">0,50 €</option>
+                    <option value="0.8">0,80 €</option>
+                    <option value="1">1,00 €</option>
+                    <option value="2">2,00 €</option>
+                    <option value="4">4,00 €</option>
+                    <option value="5">5,00 €</option>
+                </select>
+            </div>
+            <div>
+                <button id="spinButton" class="styled-button">🎰 Spin 🎰</button>
+            </div>
+            <div>
+                <span class="info">Gewinn: <span id="winAmount">0.00</span> €</span>
+            </div>
+            <div id="winMessage"></div>
         </div>
-        <div>
-            <span>Einsatz:</span>
-            <select id="betAmount">
-                <option value="0.2">0,20 €</option>
-                <option value="0.5">0,50 €</option>
-                <option value="0.8">0,80 €</option>
-                <option value="1">1,00 €</option>
-                <option value="2">2,00 €</option>
-                <option value="4">4,00 €</option>
-                <option value="5">5,00 €</option>
-            </select>
-        </div>
-        <div>
-            <button id="spinButton" class="button">🎰 Spin 🎰</button>
-        </div>
-        <div>
-            <span>Gewinn: <span id="winAmount">0.00</span> €</span>
-        </div>
-        <div id="winMessage"></div>
     </div>
     <script src="script.js"></script>
 </body>
