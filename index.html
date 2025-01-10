@@ -8,55 +8,84 @@
         body {
             margin: 0;
             background-color: black;
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
+            flex-direction: column;
             height: 100vh;
         }
 
         canvas {
             border: 5px solid gold;
+            background-color: #222;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .controls span {
+            color: gold;
+            font-size: 20px;
+            margin: 0 10px;
         }
 
         .button {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
             background-color: gold;
             color: black;
             border: none;
-            padding: 15px 30px;
-            font-size: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
             border-radius: 5px;
             cursor: pointer;
+            margin: 0 10px;
         }
 
         .button:hover {
             background-color: darkorange;
         }
+
+        select {
+            padding: 5px;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
-    <canvas id="slotCanvas" width="600" height="800"></canvas>
-    <button class="button" onclick="spin()">🎰 Spin 🎰</button>
+    <canvas id="slotCanvas" width="800" height="600"></canvas>
+    <div class="controls">
+        <span>Guthaben: <span id="balance">250</span> €</span>
+        <span>Einsatz:</span>
+        <select id="betAmount">
+            <option value="0.2">0,20 €</option>
+            <option value="0.5">0,50 €</option>
+            <option value="0.8">0,80 €</option>
+            <option value="1">1,00 €</option>
+            <option value="2">2,00 €</option>
+            <option value="4">4,00 €</option>
+            <option value="5">5,00 €</option>
+        </select>
+        <button class="button" onclick="spin()">🎰 Spin 🎰</button>
+    </div>
 
     <script>
         const canvas = document.getElementById("slotCanvas");
         const ctx = canvas.getContext("2d");
 
-        const symbols = ["🍒", "🔔", "⭐", "💰", "📚"]; // Beispiel-Symbole
+        const symbols = ["🍒", "🔔", "⭐", "💰", "📚", "🪙", "🪞", "⚜️"]; // Mehr Symbole
         const reels = [[], [], [], [], []];
         const rows = 3;
         const cols = 5;
         const slotSize = 100;
+        const spinSpeed = 50; // Animation Geschwindigkeit
+        let balance = 250;
 
-        // Initiales Setup der Slots
+        // Slots initialisieren
         function initializeSlots() {
             for (let col = 0; col < cols; col++) {
-                for (let row = 0; row < rows; row++) {
-                    reels[col].push(randomSymbol());
-                }
+                reels[col] = Array.from({ length: rows }, randomSymbol);
             }
             drawSlots();
         }
@@ -78,13 +107,13 @@
 
             for (let col = 0; col < cols; col++) {
                 for (let row = 0; row < rows; row++) {
-                    const x = col * slotSize + 50;
-                    const y = row * slotSize + 200;
+                    const x = col * slotSize + 150;
+                    const y = row * slotSize + 150;
 
-                    ctx.fillStyle = "white";
+                    ctx.fillStyle = "#333";
                     ctx.fillRect(x, y, slotSize, slotSize);
 
-                    ctx.fillStyle = "black";
+                    ctx.fillStyle = "white";
                     ctx.font = "bold 40px Arial";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
@@ -94,19 +123,57 @@
 
             // Titel
             ctx.fillStyle = "gold";
-            ctx.font = "bold 50px Arial";
+            ctx.font = "bold 40px Arial";
             ctx.textAlign = "center";
-            ctx.fillText("🥃 BOOK OF IGOR 🥃", canvas.width / 2, 100);
+            ctx.fillText("🥃 BOOK OF IGOR 🥃", canvas.width / 2, 50);
+        }
+
+        // Animation des Spins
+        function spinAnimation(callback) {
+            let frame = 0;
+            const interval = setInterval(() => {
+                for (let col = 0; col < cols; col++) {
+                    reels[col] = reels[col].map(() => randomSymbol());
+                }
+                drawSlots();
+
+                frame++;
+                if (frame > 20) {
+                    clearInterval(interval);
+                    callback();
+                }
+            }, spinSpeed);
         }
 
         // Spin-Logik
         function spin() {
-            for (let col = 0; col < cols; col++) {
-                for (let row = 0; row < rows; row++) {
-                    reels[col][row] = randomSymbol();
-                }
+            const bet = parseFloat(document.getElementById("betAmount").value);
+            if (balance < bet) {
+                alert("Nicht genug Guthaben!");
+                return;
             }
-            drawSlots();
+
+            balance -= bet;
+            updateBalance();
+
+            spinAnimation(() => {
+                checkWin(bet);
+            });
+        }
+
+        // Gewinn prüfen (einfacher Beispielalgorithmus)
+        function checkWin(bet) {
+            const win = Math.random() > 0.7 ? bet * 5 : 0; // 30% Gewinnchance
+            balance += win;
+            updateBalance();
+
+            if (win > 0) {
+                alert(`Du hast ${win.toFixed(2)} € gewonnen!`);
+            }
+        }
+
+        function updateBalance() {
+            document.getElementById("balance").textContent = balance.toFixed(2);
         }
 
         initializeSlots();
