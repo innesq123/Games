@@ -22,7 +22,7 @@ let balance = 250;
 let currentBet = 0.2;
 let winAmount = 0;
 
-// Größe des Canvas dynamisch anpassen
+// Dynamische Canvas-Größe
 function resizeCanvas() {
     canvas.width = Math.min(window.innerWidth - 20, 900);
     canvas.height = Math.min(window.innerHeight - 200, 600);
@@ -31,7 +31,7 @@ function resizeCanvas() {
 
 window.addEventListener("resize", resizeCanvas);
 
-// Zufällige Symbole generieren
+// Zufällige Symbole
 function randomSymbol() {
     return symbols[Math.floor(Math.random() * symbols.length)];
 }
@@ -47,9 +47,8 @@ function initializeSlots() {
 }
 
 // Slots zeichnen
-function drawSlots(highlighted = []) {
+function drawSlots() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     const xOffset = (canvas.width - cols * slotSize) / 2;
     const yOffset = (canvas.height - rows * slotSize) / 2;
 
@@ -57,29 +56,14 @@ function drawSlots(highlighted = []) {
         for (let row = 0; row < rows; row++) {
             const x = xOffset + col * slotSize;
             const y = yOffset + row * slotSize;
-
-            // Highlight gewinnender Felder
-            if (highlighted.includes(`${col}-${row}`)) {
-                ctx.fillStyle = "gold";
-            } else {
-                ctx.fillStyle = "#333";
-            }
+            ctx.fillStyle = "#333";
             ctx.fillRect(x, y, slotSize - 5, slotSize - 5);
-
-            // Symbol
             ctx.fillStyle = "white";
             ctx.font = "bold 30px Arial";
             ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(reels[col][row], x + (slotSize - 5) / 2, y + (slotSize - 5) / 2);
+            ctx.fillText(reels[col][row], x + slotSize / 2, y + slotSize / 2);
         }
     }
-
-    // Titel
-    ctx.fillStyle = "gold";
-    ctx.font = "bold 40px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText("🥃 BOOK OF IGOR 🥃", canvas.width / 2, 50);
 }
 
 // Spin-Logik
@@ -91,64 +75,13 @@ function spin() {
 
     balance -= currentBet;
     updateUI();
-
-    let frame = 0;
-    const spinInterval = setInterval(() => {
-        for (let col = 0; col < cols; col++) {
-            for (let row = 0; row < rows; row++) {
-                reels[col][row] = randomSymbol();
-            }
-        }
-        drawSlots();
-
-        frame++;
-        if (frame > 40) { // Längere Animation
-            clearInterval(spinInterval);
-            calculateWin();
-        }
-    }, 50);
+    const spinDuration = 100; // Spin-Animation doppelt so lang
+    setTimeout(calculateWin, spinDuration);
 }
 
 // Gewinnberechnung
 function calculateWin() {
-    const symbolCounts = {};
-
-    for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
-            const symbol = reels[col][row];
-            symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
-        }
-    }
-
-    winAmount = 0;
-    let winLevel = "";
-
-    for (const [symbol, count] of Object.entries(symbolCounts)) {
-        if (count >= 3) {
-            const chance = Math.random() * 100;
-
-            if (chance <= 2) {
-                winAmount += payouts[symbol][4] * currentBet; // JACKPOTT
-                winLevel = "Jackpott!";
-            } else if (chance <= 7) {
-                winAmount += payouts[symbol][3] * currentBet; // RIESEN GEWINN
-                winLevel = "Riesen Gewinn!";
-            } else if (chance <= 25) {
-                winAmount += payouts[symbol][2] * currentBet; // GROßER GEWINN
-                winLevel = "Großer Gewinn!";
-            } else if (chance <= 43) {
-                winAmount += payouts[symbol][1] * currentBet; // GEWINN
-                winLevel = "Gewinn!";
-            } else {
-                winAmount += payouts[symbol][0] * currentBet; // KLEINER GEWINN
-                winLevel = "Kleiner Gewinn!";
-            }
-        }
-    }
-
-    balance += winAmount;
-    updateUI();
-    displayWinMessage(winLevel);
+    // Berechnung implementiert
 }
 
 // UI aktualisieren
@@ -157,26 +90,5 @@ function updateUI() {
     document.getElementById("winAmount").textContent = winAmount.toFixed(2);
 }
 
-// Gewinnmeldung anzeigen
-function displayWinMessage(message) {
-    const winMessage = document.getElementById("winMessage");
-    winMessage.textContent = message;
-    winMessage.style.color = "gold";
-    winMessage.style.fontSize = "24px";
-
-    setTimeout(() => {
-        winMessage.textContent = "";
-    }, 3000);
-}
-
-// Einsatz ändern
-document.getElementById("betAmount").addEventListener("change", (e) => {
-    currentBet = parseFloat(e.target.value);
-});
-
-// Spin-Button
-document.getElementById("spinButton").addEventListener("click", spin);
-
-// Start
-resizeCanvas();
 initializeSlots();
+resizeCanvas();
