@@ -1,8 +1,9 @@
 const canvas = document.getElementById("slotCanvas");
 const ctx = canvas.getContext("2d");
 
-const symbols = ["🍒", "🔔", "⭐", "💰", "📚", "🪙", "⚜️", "🪞"]; // Symbole
-const payouts = { // Auszahlungen für 3, 4 und 5 gleiche Symbole
+// Symbole und Auszahlungen
+const symbols = ["🍒", "🔔", "⭐", "💰", "📚", "🪙", "⚜️", "🪞"];
+const payouts = {
     "🍒": [0.5, 2, 5],
     "🔔": [1, 3, 10],
     "⭐": [1.5, 5, 15],
@@ -10,9 +11,10 @@ const payouts = { // Auszahlungen für 3, 4 und 5 gleiche Symbole
     "📚": [2.5, 10, 25],
     "🪙": [3, 12, 30],
     "⚜️": [4, 15, 50],
-    "🪞": [5, 20, 75]
+    "🪞": [5, 20, 75],
 };
 
+// Slot-Grid-Konfiguration
 const rows = 3;
 const cols = 5;
 const slotSize = 100;
@@ -21,7 +23,21 @@ let balance = 250;
 let currentBet = 0.2;
 let winAmount = 0;
 
-// Initialisierung der Slots
+// Größe des Canvas dynamisch anpassen
+function resizeCanvas() {
+    canvas.width = Math.min(window.innerWidth - 20, 900);
+    canvas.height = Math.min(window.innerHeight - 200, 600);
+    drawSlots();
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+// Zufällige Symbole generieren
+function randomSymbol() {
+    return symbols[Math.floor(Math.random() * symbols.length)];
+}
+
+// Slots initialisieren
 function initializeSlots() {
     for (let col = 0; col < cols; col++) {
         for (let row = 0; row < rows; row++) {
@@ -31,33 +47,28 @@ function initializeSlots() {
     drawSlots();
 }
 
-// Zufällige Symbole
-function randomSymbol() {
-    return symbols[Math.floor(Math.random() * symbols.length)];
-}
-
 // Slots zeichnen
 function drawSlots() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Hintergrund
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const xOffset = (canvas.width - cols * slotSize) / 2;
+    const yOffset = (canvas.height - rows * slotSize) / 2;
 
-    // Slots
     for (let col = 0; col < cols; col++) {
         for (let row = 0; row < rows; row++) {
-            const x = col * slotSize + 100;
-            const y = row * slotSize + 100;
+            const x = xOffset + col * slotSize;
+            const y = yOffset + row * slotSize;
 
+            // Slot-Hintergrund
             ctx.fillStyle = "#333";
-            ctx.fillRect(x, y, slotSize, slotSize);
+            ctx.fillRect(x, y, slotSize - 5, slotSize - 5);
 
+            // Symbol
             ctx.fillStyle = "white";
-            ctx.font = "bold 40px Arial";
+            ctx.font = "bold 30px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(reels[col][row], x + slotSize / 2, y + slotSize / 2);
+            ctx.fillText(reels[col][row], x + (slotSize - 5) / 2, y + (slotSize - 5) / 2);
         }
     }
 
@@ -78,7 +89,6 @@ function spin() {
     balance -= currentBet;
     updateUI();
 
-    // Animation
     let frame = 0;
     const spinInterval = setInterval(() => {
         for (let col = 0; col < cols; col++) {
@@ -133,5 +143,6 @@ document.getElementById("betAmount").addEventListener("change", (e) => {
 // Spin-Button
 document.getElementById("spinButton").addEventListener("click", spin);
 
-// Slots initialisieren
+// Start
+resizeCanvas();
 initializeSlots();
